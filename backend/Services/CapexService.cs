@@ -1,0 +1,33 @@
+using backend.Data.Repositories;
+using backend.DTOs;
+using backend.Models;
+using backend.Services.Interfaces;
+
+namespace backend.Services;
+
+public class CapexService : ICapexService
+{
+    private readonly ICapexRepository _repo;
+    public CapexService(ICapexRepository repo) => _repo = repo;
+
+    public Task<Capex?> GetCapexAsync(int id) => _repo.GetByIdAsync(id);
+    public Task<List<Capex>> GetAllCapexAsync() => _repo.GetAllAsync();
+
+    public async Task<Capex> CreateCapexAsync(CreateCapexDto dto)
+    {
+        if (dto.BudgetTotal < 0)
+            throw new BusinessException("Le budget total ne peut pas être négatif.");
+
+        // Règle métier : à la création, le reste = le total (rien n'est encore dépensé)
+        var capex = new Capex
+        {
+            NomCapex = dto.NomCapex,
+            BudgetTotal = dto.BudgetTotal,
+            ResteBudget = dto.BudgetTotal
+        };
+
+        var newId = await _repo.AddAsync(capex);
+        capex.CapexId = newId;
+        return capex;
+    }
+}
