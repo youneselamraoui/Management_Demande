@@ -1,5 +1,7 @@
 using Microsoft.Data.SqlClient;
 using backend.Models;
+using backend.DTOs;
+
 
 namespace backend.Data.Repositories;
 
@@ -87,4 +89,37 @@ public class CapexRepository : ICapexRepository
         BudgetTotal = reader.GetDecimal(reader.GetOrdinal("BudgetTotal")),
         ResteBudget = reader.GetDecimal(reader.GetOrdinal("ResteBudget"))
     };
+    
+    public async Task<List<ConsommationDepartementDto>> GetConsommationParDepartementAsync(int capexId)
+{
+    var result = new List<ConsommationDepartementDto>();
+
+    using var connection = _connectionFactory.CreateConnection();
+    await connection.OpenAsync();
+
+    using var command = new SqlCommand(@"
+        SELECT dep.Nom AS DepartementNom, SUM(dd.Quantite * dd.Prix) AS MontantConsomme
+        FROM Demande d
+        INNER JOIN Utilisateur u ON d.UtilisateurId = u.Id
+        INNER JOIN Departement dep ON u.DepartementID = dep.Id
+        INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
+        WHERE d.CapexId = @CapexId AND d.Statut = @Statut
+        GROUP BY dep.Nom
+        ORDER BY MontantConsomme DESC", connection);
+
+    command.Parameters.AddWithValue("@CapexId", capexId);
+    command.Parameters.AddWithValue("@Statut", StatutDemande.Acceptee.ToString());
+    
+    using var reader = await command.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
+    {
+        result.Add(new ConsommationDepartementDto
+        {
+            DepartementNom = reader.GetString(reader.GetOrdinal("DepartementNom")),
+            MontantConsomme = reader.GetDecimal(reader.GetOrdinal("MontantConsomme"))
+        });
+    }
+
+    return result;
+}
 }

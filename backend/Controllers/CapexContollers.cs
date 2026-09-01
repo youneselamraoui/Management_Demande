@@ -27,4 +27,11 @@ public class CapexController : ControllerBase
         var capex = await _service.CreateCapexAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = capex.CapexId }, capex);
     }
+
+    [HttpGet("{id}/consommation-departements")]
+public async Task<IActionResult> GetConsommation(int id)
+{
+    var result = await _service.GetConsommationAsync(id);
+    return result is null ? NotFound() : Ok(result);
+}
 }

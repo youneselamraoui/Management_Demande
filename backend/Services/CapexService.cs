@@ -3,6 +3,7 @@ using backend.DTOs;
 using backend.Models;
 using backend.Services.Interfaces;
 
+
 namespace backend.Services;
 
 public class CapexService : ICapexService
@@ -29,5 +30,27 @@ public class CapexService : ICapexService
         var newId = await _repo.AddAsync(capex);
         capex.CapexId = newId;
         return capex;
+    }
+
+   public async Task<ConsommationCapexDto?> GetConsommationAsync(int capexId)
+{
+    var capex = await _repo.GetByIdAsync(capexId);
+    if (capex is null) return null;
+
+    var parDepartement = await _repo.GetConsommationParDepartementAsync(capexId);
+
+    return new ConsommationCapexDto
+    {
+        CapexId = capex.CapexId,
+        NomCapex = capex.NomCapex,
+        BudgetTotal = capex.BudgetTotal,
+        ResteBudget = capex.ResteBudget,
+        ParDepartement = parDepartement
+    };
+}
+
+    Task<ConsommationCapexDto?> ICapexService.GetConsommationAsync(int capexId)
+    {
+        throw new NotImplementedException();
     }
 }

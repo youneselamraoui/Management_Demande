@@ -18,3 +18,5 @@ export const createDemande = (data) =>
   request("/demandes", { method: "POST", body: JSON.stringify(data) });
 export const getUtilisateurs = () => request("/utilisateurs");
 export const getCapex = () => request("/capex");
+export const getConsommationCapex = (capexId) =>
+  request(`/capex/${capexId}/consommation-departements`);

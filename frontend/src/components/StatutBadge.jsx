@@ -1,8 +1,7 @@
+// src/components/StatutBadge.jsx
 const STATUT_STYLES = {
   EnAttente: { bg: "#FFF4E0", color: "#9A6700", label: "En attente" },
-  ValideChef: { bg: "#E3F2E8", color: "#1B6E3C", label: "Validé chef" },
-  ValideFinance: { bg: "#E3F2E8", color: "#1B6E3C", label: "Validé finance" },
-  ValideDirecteur: { bg: "#DFF0FF", color: "#0B5FA8", label: "Validé directeur" },
+  Acceptee: { bg: "#E3F2E8", color: "#1B6E3C", label: "Acceptée" },
   Rejetee: { bg: "#FDE8E8", color: "#B3261E", label: "Rejetée" },
 };
 

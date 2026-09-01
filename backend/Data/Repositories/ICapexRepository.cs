@@ -1,6 +1,5 @@
 using backend.Models;
-
-namespace backend.Data.Repositories;
+namespace backend.DTOs;
 
 public interface ICapexRepository
 {
@@ -8,4 +7,5 @@ public interface ICapexRepository
     Task<List<Capex>> GetAllAsync();
     Task<int> AddAsync(Capex capex);
     Task<bool> DecrementerResteBudgetAsync(int capexId, decimal montant);
-}
+    Task<List<ConsommationDepartementDto>> GetConsommationParDepartementAsync(int capexId);
+    }
