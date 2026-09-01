@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Container, Row, Col, FormGroup, ControlLabel } from "react-bootstrap";
+import { Container, Row, Col, Form, Card, ProgressBar, Table } from "react-bootstrap";
 import ChartistGraph from "react-chartist";
-import Card from "components/Card/Card.jsx";
-import { getCapex, getConsommationCapex } from "api/client.js";
+import "chartist/dist/index.css";
+import { getCapex, getConsommationCapex } from "../api/client.js";
 
+const SERIES_COLORS = ["#51bcda", "#fbc658", "#ef8157", "#6bd098", "#ff6384", "#9966ff", "#4bc0c0", "#c9cbcf"];
 const SERIES_LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 function ConsommationCapex() {
@@ -35,13 +36,16 @@ function ConsommationCapex() {
   if (error) {
     return (
       <div className="content">
-        <Container fluid><p className="text-danger">{error}</p></Container>
+        <Container fluid>
+          <p className="text-danger">{error}</p>
+        </Container>
       </div>
     );
   }
 
-  const pieLabels = consommation ? consommation.parDepartement.map((d) => d.departementNom) : [];
-  const pieSeries = consommation ? consommation.parDepartement.map((d) => d.montantConsomme) : [];
+  const parDepartement = consommation?.parDepartement ?? [];
+  const pieLabels = parDepartement.map((d) => d.departementNom);
+  const pieSeries = parDepartement.map((d) => d.montantConsomme);
 
   const donutData = {
     labels: pieLabels.length > 0 ? pieLabels : ["Aucune consommation"],
@@ -53,25 +57,44 @@ function ConsommationCapex() {
     donutWidth: 40,
     startAngle: 0,
     showLabel: false,
+    chartPadding: 10,
   };
+
+  // Assign explicit colors per slice via the Chartist draw event,
+  // so we don't depend on ct-series-a/b/c CSS classes being present.
+  const donutListener = {
+    draw: (data) => {
+      if (data.type === "slice") {
+        data.element.attr({
+          style: `stroke: ${SERIES_COLORS[data.index % SERIES_COLORS.length]}`,
+        });
+      }
+    },
+  };
+
+  const budgetTotal = consommation?.budgetTotal ?? 0;
+  const resteBudget = consommation?.resteBudget ?? 0;
+  const consomme = budgetTotal - resteBudget;
+  const pctConsomme = budgetTotal > 0 ? (consomme / budgetTotal) * 100 : 0;
 
   return (
     <div className="content">
       <Container fluid>
-        <Row>
+        <Row className="mb-4">
           <Col md={4}>
-            <FormGroup>
-              <ControlLabel>Capex</ControlLabel>
-              <select
-                className="form-control"
+            <Form.Group>
+              <Form.Label>Capex</Form.Label>
+              <Form.Select
                 value={selectedCapexId}
                 onChange={(e) => setSelectedCapexId(e.target.value)}
               >
                 {capexList.map((c) => (
-                  <option key={c.capexId} value={c.capexId}>{c.nomCapex}</option>
+                  <option key={c.capexId} value={c.capexId}>
+                    {c.nomCapex}
+                  </option>
                 ))}
-              </select>
-            </FormGroup>
+              </Form.Select>
+            </Form.Group>
           </Col>
         </Row>
 
@@ -79,58 +102,116 @@ function ConsommationCapex() {
 
         {!loading && consommation && (
           <Row>
-            <Col md={6}>
-              <Card
-                title="Consommation du Capex"
-                category={consommation.nomCapex}
-                content={
-                  <div className="ct-chart" id="chartConsommation">
-                    <ChartistGraph data={donutData} type="Pie" options={donutOptions} />
+            <Col md={6} className="mb-4">
+              <Card className="shadow-sm h-100">
+                <Card.Body className="text-center">
+                  <Card.Title as="h4" className="mb-1">
+                    Consommation du Capex
+                  </Card.Title>
+                  <Card.Subtitle className="text-muted mb-3">
+                    {consommation.nomCapex}
+                  </Card.Subtitle>
+
+                  <div
+                    className="ct-chart"
+                    id="chartConsommation"
+                    style={{ maxWidth: 260, margin: "0 auto" }}
+                  >
+                    <ChartistGraph
+                      data={donutData}
+                      type="Pie"
+                      options={donutOptions}
+                      listener={donutListener}
+                    />
                   </div>
-                }
-                legend={
-                  <div className="legend">
-                    {consommation.parDepartement.map((d, i) => (
-                      <span key={d.departementNom} style={{ marginRight: 12 }}>
-                        <i className={`fa fa-circle ct-series-${SERIES_LETTERS[i % SERIES_LETTERS.length]}-legend`} />{" "}
+
+                  <div className="d-flex flex-wrap justify-content-center gap-3 mt-3">
+                    {parDepartement.map((d, i) => (
+                      <span key={d.departementNom} className="d-inline-flex align-items-center">
+                        <span
+                          style={{
+                            display: "inline-block",
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length],
+                            marginRight: 6,
+                          }}
+                        />
                         {d.departementNom}
                       </span>
                     ))}
                   </div>
-                }
-                stats={
-                  <div className="stats">
-                    <i className="fa fa-history" /> Budget total : {consommation.budgetTotal.toLocaleString("fr-FR")} MAD
+
+                  <hr />
+
+                  <div className="text-start">
+                    <div className="d-flex justify-content-between small mb-1">
+                      <span>Consommé : {consomme.toLocaleString("fr-FR")} MAD</span>
+                      <span>{pctConsomme.toFixed(1)}%</span>
+                    </div>
+                    <ProgressBar
+                      now={pctConsomme}
+                      variant={pctConsomme > 90 ? "danger" : pctConsomme > 70 ? "warning" : "success"}
+                    />
+                    <div className="text-muted small mt-2">
+                      <i className="fa fa-history me-1" />
+                      Budget total : {budgetTotal.toLocaleString("fr-FR")} MAD
+                    </div>
                   </div>
-                }
-              />
+                </Card.Body>
+              </Card>
             </Col>
 
-            <Col md={6}>
-              <Card
-                title="Détail par département"
-                category="Montants validés (statut : validé directeur)"
-                content={
-                  <table className="table">
+            <Col md={6} className="mb-4">
+              <Card className="shadow-sm h-100">
+                <Card.Body>
+                  <Card.Title as="h4" className="mb-1">
+                    Détail par département
+                  </Card.Title>
+                  <Card.Subtitle className="text-muted mb-3">
+                    Montants validés (statut : validé directeur)
+                  </Card.Subtitle>
+
+                  <Table hover responsive size="sm">
                     <thead>
                       <tr>
                         <th>Département</th>
-                        <th>Montant consommé</th>
-                        <th>% du budget</th>
+                        <th className="text-end">Montant consommé</th>
+                        <th className="text-end">% du budget</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {consommation.parDepartement.length === 0 ? (
-                        <tr><td colSpan={3}>Aucune demande validée sur ce Capex pour l'instant.</td></tr>
+                      {parDepartement.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="text-center text-muted">
+                            Aucune demande validée sur ce Capex pour l'instant.
+                          </td>
+                        </tr>
                       ) : (
-                        consommation.parDepartement.map((d) => (
+                        parDepartement.map((d, i) => (
                           <tr key={d.departementNom}>
-                            <td>{d.departementNom}</td>
-                            <td>{d.montantConsomme.toLocaleString("fr-FR")} MAD</td>
                             <td>
-                              {consommation.budgetTotal > 0
-                                ? ((d.montantConsomme / consommation.budgetTotal) * 100).toFixed(1)
-                                : 0}%
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length],
+                                  marginRight: 8,
+                                }}
+                              />
+                              {d.departementNom}
+                            </td>
+                            <td className="text-end">
+                              {d.montantConsomme.toLocaleString("fr-FR")} MAD
+                            </td>
+                            <td className="text-end">
+                              {budgetTotal > 0
+                                ? ((d.montantConsomme / budgetTotal) * 100).toFixed(1)
+                                : 0}
+                              %
                             </td>
                           </tr>
                         ))
@@ -138,13 +219,17 @@ function ConsommationCapex() {
                     </tbody>
                     <tfoot>
                       <tr>
-                        <td><strong>Reste budget</strong></td>
-                        <td colSpan={2}><strong>{consommation.resteBudget.toLocaleString("fr-FR")} MAD</strong></td>
+                        <td>
+                          <strong>Reste budget</strong>
+                        </td>
+                        <td colSpan={2} className="text-end">
+                          <strong>{resteBudget.toLocaleString("fr-FR")} MAD</strong>
+                        </td>
                       </tr>
                     </tfoot>
-                  </table>
-                }
-              />
+                  </Table>
+                </Card.Body>
+              </Card>
             </Col>
           </Row>
         )}

@@ -19,7 +19,6 @@ public class CapexService : ICapexService
         if (dto.BudgetTotal < 0)
             throw new BusinessException("Le budget total ne peut pas être négatif.");
 
-        // Règle métier : à la création, le reste = le total (rien n'est encore dépensé)
         var capex = new Capex
         {
             NomCapex = dto.NomCapex,
@@ -32,25 +31,21 @@ public class CapexService : ICapexService
         return capex;
     }
 
-   public async Task<ConsommationCapexDto?> GetConsommationAsync(int capexId)
-{
-    var capex = await _repo.GetByIdAsync(capexId);
-    if (capex is null) return null;
-
-    var parDepartement = await _repo.GetConsommationParDepartementAsync(capexId);
-
-    return new ConsommationCapexDto
+    public async Task<ConsommationCapexDto?> GetConsommationAsync(int capexId)
     {
-        CapexId = capex.CapexId,
-        NomCapex = capex.NomCapex,
-        BudgetTotal = capex.BudgetTotal,
-        ResteBudget = capex.ResteBudget,
-        ParDepartement = parDepartement
-    };
-}
+        var capex = await _repo.GetByIdAsync(capexId);
+        if (capex is null) return null;
 
-    Task<ConsommationCapexDto?> ICapexService.GetConsommationAsync(int capexId)
-    {
-        throw new NotImplementedException();
+        var parDepartement = await _repo.GetConsommationParDepartementAsync(capexId);
+
+        return new ConsommationCapexDto
+        {
+            CapexId = capex.CapexId,
+            NomCapex = capex.NomCapex,
+            BudgetTotal = capex.BudgetTotal,
+            ResteBudget = capex.ResteBudget,
+            ParDepartement = parDepartement
+        };
     }
 }
+// no more explicit ICapexService.GetConsommationAsync stub

@@ -61,6 +61,7 @@ export default function DemandesPage() {
       )}
 
       {!loading && demandes.length > 0 && (
+        <div className="demandes-card">
         <table className="demandes-table">
           <thead>
             <tr>
@@ -85,7 +86,8 @@ export default function DemandesPage() {
             ))}
           </tbody>
         </table>
-      )}
+       </div>
+)}
 
       {showModal && (
         <CreateDemandeModal
