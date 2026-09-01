@@ -9,11 +9,13 @@ namespace backend.Services;
 public class DemandeService : IDemandeService
 {
     private readonly IDemandeRepository _repo;
+    private readonly IUtilisateurRepository _utilisateurRepo;
     private readonly ICapexRepository _capexRepo;
 
-    public DemandeService(IDemandeRepository repo, ICapexRepository capexRepo)
+    public DemandeService(IDemandeRepository repo, IUtilisateurRepository utilisateurRepo, ICapexRepository capexRepo)
     {
         _repo = repo;
+        _utilisateurRepo = utilisateurRepo;
         _capexRepo = capexRepo;
     }
 
@@ -22,84 +24,41 @@ public class DemandeService : IDemandeService
 
     public async Task<Demande> CreateDemandeAsync(CreateDemandeDto dto)
     {
-        var capex = await _capexRepo.GetByIdAsync(dto.CapexId);
-        if (capex is null)
+        if (await _utilisateurRepo.GetByIdAsync(dto.UtilisateurId) is null)
+            throw new BusinessException($"L'utilisateur {dto.UtilisateurId} n'existe pas.");
+        if (await _capexRepo.GetByIdAsync(dto.CapexId) is null)
             throw new BusinessException($"Le Capex {dto.CapexId} n'existe pas.");
+
+        if (dto.Articles is null || dto.Articles.Count == 0)
+            throw new BusinessException("Une demande doit contenir au moins un article.");
+
+        foreach (var ligne in dto.Articles)
+        {
+            if (string.IsNullOrWhiteSpace(ligne.Article))
+                throw new BusinessException("Le nom de l'article est obligatoire.");
+            if (ligne.Quantite <= 0)
+                throw new BusinessException($"Quantité invalide pour '{ligne.Article}'.");
+            if (ligne.Prix < 0)
+                throw new BusinessException($"Prix invalide pour '{ligne.Article}'.");
+        }
 
         var demande = new Demande
         {
             UtilisateurId = dto.UtilisateurId,
             CapexId = dto.CapexId,
             RFx = dto.RFx,
-            Statut = StatutDemande.EnAttente,
-            CreateAt = DateTime.UtcNow
+            Statut = StatutDemande.EnAttente
         };
 
-        var newId = await _repo.AddAsync(demande);
-        demande.IdDemande = newId;
-        return demande;
-    }
-
-    public async Task ValiderParChefAsync(int demandeId)
-    {
-        var demande = await GetDemandeOuThrow(demandeId);
-        if (demande.DateValidateChef is not null)
-            throw new BusinessException("Déjà validée par le chef.");
-
-        demande.DateValidateChef = DateTime.UtcNow;
-        await FinaliserSiComplet(demande);
-    }
-
-    public async Task ValiderParFinanceAsync(int demandeId)
-    {
-        var demande = await GetDemandeOuThrow(demandeId);
-        if (demande.DateValidateFinance is not null)
-            throw new BusinessException("Déjà validée par la finance.");
-
-        demande.DateValidateFinance = DateTime.UtcNow;
-        await FinaliserSiComplet(demande);
-    }
-
-    public async Task ValiderParDirecteurAsync(int demandeId)
-    {
-        var demande = await GetDemandeOuThrow(demandeId);
-        if (demande.DateValidateDirecteur is not null)
-            throw new BusinessException("Déjà validée par le directeur.");
-
-        demande.DateValidateDirecteur = DateTime.UtcNow;
-        await FinaliserSiComplet(demande);
-    }
-
-    public async Task RejeterAsync(int demandeId)
-    {
-        var demande = await GetDemandeOuThrow(demandeId);
-        if (demande.Statut == StatutDemande.Rejetee)
-            throw new BusinessException("Cette demande est déjà rejetée.");
-        if (demande.Statut == StatutDemande.Acceptee)
-            throw new BusinessException("Cette demande est déjà acceptée, elle ne peut plus être rejetée.");
-
-        demande.Statut = StatutDemande.Rejetee;
-        await _repo.UpdateAsync(demande);
-    }
-
-    private async Task<Demande> GetDemandeOuThrow(int demandeId)
-    {
-        var demande = await _repo.GetByIdAsync(demandeId);
-        if (demande is null) throw new BusinessException("Demande introuvable.");
-        if (demande.Statut == StatutDemande.Rejetee)
-            throw new BusinessException("Cette demande a été rejetée, aucune validation possible.");
-        return demande;
-    }
-
-    private async Task FinaliserSiComplet(Demande demande)
-    {
-        if (demande.DateValidateChef is not null
-            && demande.DateValidateFinance is not null
-            && demande.DateValidateDirecteur is not null)
+        var details = dto.Articles.Select(a => new DetailDemande
         {
-            demande.Statut = StatutDemande.Acceptee;
-        }
+            Article = a.Article,
+            Quantite = a.Quantite,
+            Prix = a.Prix,
+            Devis = a.Devis
+        }).ToList();
 
-        await _repo.UpdateAsync(demande);
+        var newId = await _repo.AddWithDetailsAsync(demande, details);
+        return (await _repo.GetByIdAsync(newId))!;
     }
 }

@@ -1,0 +1,100 @@
+.demandes-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.demandes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.demandes-header h1 {
+  font-size: 22px;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.demandes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.demandes-table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid #e0e0e0;
+  color: #666;
+  font-weight: 600;
+}
+
+.demande-row {
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.demande-row:hover {
+  background: #fafafa;
+}
+
+.demande-row td {
+  padding: 12px;
+}
+
+.demande-arrow {
+  width: 24px;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+  color: #666;
+  font-size: 11px;
+}
+
+.arrow-open {
+  transform: rotate(90deg);
+}
+
+.demande-details-row td {
+  background: #F7F9FB;
+  padding: 16px 20px;
+}
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.details-table th {
+  text-align: left;
+  padding: 6px 10px;
+  color: #666;
+  border-bottom: 1px solid #ddd;
+}
+
+.details-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.details-table tfoot td {
+  padding: 8px 10px;
+  border-top: 1px solid #ccc;
+  border-bottom: none;
+}
+
+.demandes-info {
+  color: #666;
+  font-size: 14px;
+}
+
+.demandes-error {
+  color: #B3261E;
+  font-size: 14px;
+}

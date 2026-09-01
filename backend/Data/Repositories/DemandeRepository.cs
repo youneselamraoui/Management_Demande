@@ -10,23 +10,23 @@ public class DemandeRepository : IDemandeRepository
         => _connectionFactory = connectionFactory;
 
     private const string BaseSelect = @"
-        SELECT idDemande, UtilisateurId, Statut, CapexId, RFx, CreateAt,
-               DateValidation1, DateValidation2,
-               DateValidateChef, DateValidateFinance, DateValidateDirecteur
-        FROM Demande";
+        SELECT d.idDemande, d.UtilisateurId, u.Nom AS UtilisateurNom, d.Statut,
+               d.CapexId, c.NomCapex AS CapexNom, d.RFx, d.CreateAt,
+               d.DateValidateChef, d.DateValidateFinance, d.DateValidateDirecteur
+        FROM Demande d
+        INNER JOIN Utilisateur u ON d.UtilisateurId = u.Id
+        INNER JOIN Capex c ON d.CapexId = c.CapexId";
 
     public async Task<Demande?> GetByIdAsync(int id)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
 
-        using var command = new SqlCommand($"{BaseSelect} WHERE idDemande = @Id", connection);
+        using var command = new SqlCommand($"{BaseSelect} WHERE d.idDemande = @Id", connection);
         command.Parameters.AddWithValue("@Id", id);
 
         using var reader = await command.ExecuteReaderAsync();
-        if (await reader.ReadAsync())
-            return MapToDemande(reader);
-
+        if (await reader.ReadAsync()) return MapToDemande(reader);
         return null;
     }
 
@@ -37,7 +37,7 @@ public class DemandeRepository : IDemandeRepository
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
 
-        using var command = new SqlCommand(BaseSelect, connection);
+        using var command = new SqlCommand($"{BaseSelect} ORDER BY d.CreateAt DESC", connection);
         using var reader = await command.ExecuteReaderAsync();
 
         while (await reader.ReadAsync())
@@ -65,44 +65,64 @@ public class DemandeRepository : IDemandeRepository
         return (int)(await command.ExecuteScalarAsync())!;
     }
 
-    public async Task UpdateAsync(Demande demande)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        await connection.OpenAsync();
-
-        using var command = new SqlCommand(@"
-            UPDATE Demande
-            SET Statut = @Statut,
-                DateValidation1 = @DateValidation1,
-                DateValidation2 = @DateValidation2,
-                DateValidateChef = @DateValidateChef,
-                DateValidateFinance = @DateValidateFinance,
-                DateValidateDirecteur = @DateValidateDirecteur
-            WHERE idDemande = @Id", connection);
-
-        command.Parameters.AddWithValue("@Id", demande.IdDemande);
-        command.Parameters.AddWithValue("@Statut", demande.Statut.ToString());
-        command.Parameters.AddWithValue("@DateValidation1", (object?)demande.DateValidation1 ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DateValidation2", (object?)demande.DateValidation2 ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DateValidateChef", (object?)demande.DateValidateChef ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DateValidateFinance", (object?)demande.DateValidateFinance ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DateValidateDirecteur", (object?)demande.DateValidateDirecteur ?? DBNull.Value);
-
-        await command.ExecuteNonQueryAsync();
-    }
-
     private static Demande MapToDemande(SqlDataReader reader) => new()
     {
         IdDemande = reader.GetInt32(reader.GetOrdinal("idDemande")),
         UtilisateurId = reader.GetInt32(reader.GetOrdinal("UtilisateurId")),
+        UtilisateurNom = reader.GetString(reader.GetOrdinal("UtilisateurNom")),
         Statut = Enum.Parse<StatutDemande>(reader.GetString(reader.GetOrdinal("Statut"))),
         CapexId = reader.GetInt32(reader.GetOrdinal("CapexId")),
+        CapexNom = reader.GetString(reader.GetOrdinal("CapexNom")),
         RFx = reader.IsDBNull(reader.GetOrdinal("RFx")) ? null : reader.GetString(reader.GetOrdinal("RFx")),
         CreateAt = reader.GetDateTime(reader.GetOrdinal("CreateAt")),
-        DateValidation1 = reader.IsDBNull(reader.GetOrdinal("DateValidation1")) ? null : reader.GetDateTime(reader.GetOrdinal("DateValidation1")),
-        DateValidation2 = reader.IsDBNull(reader.GetOrdinal("DateValidation2")) ? null : reader.GetDateTime(reader.GetOrdinal("DateValidation2")),
         DateValidateChef = reader.IsDBNull(reader.GetOrdinal("DateValidateChef")) ? null : reader.GetDateTime(reader.GetOrdinal("DateValidateChef")),
         DateValidateFinance = reader.IsDBNull(reader.GetOrdinal("DateValidateFinance")) ? null : reader.GetDateTime(reader.GetOrdinal("DateValidateFinance")),
         DateValidateDirecteur = reader.IsDBNull(reader.GetOrdinal("DateValidateDirecteur")) ? null : reader.GetDateTime(reader.GetOrdinal("DateValidateDirecteur"))
     };
+public async Task<int> AddWithDetailsAsync(Demande demande, List<DetailDemande> details)
+{
+    using var connection = _connectionFactory.CreateConnection();
+    await connection.OpenAsync();
+    using var transaction = connection.BeginTransaction();
+
+    try
+    {
+        using var demandeCmd = new SqlCommand(@"
+            INSERT INTO Demande (UtilisateurId, Statut, CapexId, RFx, CreateAt)
+            VALUES (@UtilisateurId, @Statut, @CapexId, @RFx, @CreateAt);
+            SELECT CAST(SCOPE_IDENTITY() AS int);", connection, transaction);
+
+        demandeCmd.Parameters.AddWithValue("@UtilisateurId", demande.UtilisateurId);
+        demandeCmd.Parameters.AddWithValue("@Statut", demande.Statut.ToString());
+        demandeCmd.Parameters.AddWithValue("@CapexId", demande.CapexId);
+        demandeCmd.Parameters.AddWithValue("@RFx", (object?)demande.RFx ?? DBNull.Value);
+        demandeCmd.Parameters.AddWithValue("@CreateAt", DateTime.UtcNow);
+
+        var demandeId = (int)(await demandeCmd.ExecuteScalarAsync())!;
+
+        foreach (var detail in details)
+        {
+            using var detailCmd = new SqlCommand(@"
+                INSERT INTO DetailDemande (DemandeId, Article, Quantite, Prix, Devis)
+                VALUES (@DemandeId, @Article, @Quantite, @Prix, @Devis);", connection, transaction);
+
+            detailCmd.Parameters.AddWithValue("@DemandeId", demandeId);
+            detailCmd.Parameters.AddWithValue("@Article", detail.Article);
+            detailCmd.Parameters.AddWithValue("@Quantite", detail.Quantite);
+            detailCmd.Parameters.AddWithValue("@Prix", detail.Prix);
+            detailCmd.Parameters.AddWithValue("@Devis", (object?)detail.Devis ?? DBNull.Value);
+
+            await detailCmd.ExecuteNonQueryAsync();
+        }
+
+        await transaction.CommitAsync();
+        return demandeId;
+    }
+    catch
+    {
+        await transaction.RollbackAsync();   // ← annule TOUT (demande + articles) en cas d'erreur
+        throw;
+    }
+}
+
 }

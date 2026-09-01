@@ -1,4 +1,3 @@
-// Controllers/DemandesController.cs
 using Microsoft.AspNetCore.Mvc;
 using backend.DTOs;
 using backend.Services;
@@ -35,33 +34,5 @@ public class DemandesController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-    }
-
-    [HttpPost("{id}/valider-chef")]
-    public async Task<IActionResult> ValiderChef(int id)
-    {
-        try { await _service.ValiderParChefAsync(id); return NoContent(); }
-        catch (BusinessException ex) { return BadRequest(new { message = ex.Message }); }
-    }
-
-    [HttpPost("{id}/valider-finance")]
-    public async Task<IActionResult> ValiderFinance(int id)
-    {
-        try { await _service.ValiderParFinanceAsync(id); return NoContent(); }
-        catch (BusinessException ex) { return BadRequest(new { message = ex.Message }); }
-    }
-
-    [HttpPost("{id}/valider-directeur")]
-    public async Task<IActionResult> ValiderDirecteur(int id)
-    {
-        try { await _service.ValiderParDirecteurAsync(id); return NoContent(); }
-        catch (BusinessException ex) { return BadRequest(new { message = ex.Message }); }
-    }
-
-    [HttpPost("{id}/rejeter")]
-    public async Task<IActionResult> Rejeter(int id)
-    {
-        try { await _service.RejeterAsync(id); return NoContent(); }
-        catch (BusinessException ex) { return BadRequest(new { message = ex.Message }); }
     }
 }
