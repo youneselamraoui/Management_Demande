@@ -188,11 +188,9 @@ function DemandeRow({ demande, expanded, onToggle, details }) {
     <>
       <tr onClick={onToggle}>
         <td style={{ textAlign: "center" }}>
-          <ChevronRight
-            size={16}
-            color="var(--text-secondary)"
-            style={{ transition: "transform 0.15s ease", transform: expanded ? "rotate(90deg)" : "none" }}
-          />
+          <span style={{ fontSize: 11, color: "var(--text-primary)" }}>
+            {expanded ? "▼" : "▶"}
+          </span>
         </td>
         <td style={{ fontWeight: 600 }}>#{demande.idDemande}</td>
         <td>
