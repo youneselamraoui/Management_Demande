@@ -54,7 +54,9 @@ export default function SuiviCapex({ onNavigate, user }) {
     );
   }
 
-  const consomme = data.budgetTotal - data.resteBudget;
+  const totalConsommeReel = data.parDepartement.reduce((sum, d) => sum + d.montantConsomme, 0);
+  const consomme = totalConsommeReel;
+  const resteBudgetReel = data.budgetTotal - totalConsommeReel;
   const pctConsomme = data.budgetTotal > 0 ? (consomme / data.budgetTotal) * 100 : 0;
   const previsionnel = consomme + data.montantEnAttente;
 
@@ -171,7 +173,7 @@ export default function SuiviCapex({ onNavigate, user }) {
             <div>
               <strong>Aperçu budgétaire</strong>
               La consommation totale est de {pctConsomme.toFixed(0)}% sur ce Capex.
-              Le reste à engager s'élève à {data.resteBudget.toLocaleString("fr-FR")} MAD.
+              Le reste à engager s'élève à {resteBudgetReel.toLocaleString("fr-FR")} MAD.
             </div>
           </div>
         </div>
@@ -217,7 +219,7 @@ export default function SuiviCapex({ onNavigate, user }) {
                 <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Fonds disponibles</div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontWeight: 600 }}>{data.resteBudget.toLocaleString("fr-FR")} MAD</div>
+                <div style={{ fontWeight: 600 }}>{resteBudgetReel.toLocaleString("fr-FR")} MAD</div>
                 <span className="badge-pill" style={{ background: "var(--gray-bg)", color: "var(--text-secondary)", marginTop: 2 }}>
                   {(100 - pctConsomme).toFixed(0)}%
                 </span>

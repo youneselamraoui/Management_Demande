@@ -1,9 +1,10 @@
+// src/pages/DemandesPage.jsx
 import { useEffect, useState } from "react";
-import { Search, Filter, ArrowUpDown, Plus, FileText, Clock, Calendar } from "lucide-react";
 import AppShell from "../components/AppShell";
+import { Search, Filter, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight } from "lucide-react";
 import { StatutBadge, Avatar, StatCard } from "../components/ui/Primitives";
 import CreateDemandeModal from "../components/CreateDemandeModal";
-import { getDemandes } from "../api/client";
+import { getDemandes, getDetailsDemande } from "../api/client";
 import "../styles/capex-theme.css";
 
 const PAGE_SIZE = 5;
@@ -18,6 +19,8 @@ export default function DemandesPage({ onNavigate, user }) {
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+  const [detailsCache, setDetailsCache] = useState({});
 
   useEffect(() => { load(); }, []);
 
@@ -31,6 +34,22 @@ export default function DemandesPage({ onNavigate, user }) {
 
   function handleCreated(newDemande) {
     setDemandes((prev) => [newDemande, ...prev]);
+  }
+
+  async function toggleExpand(id) {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    if (!detailsCache[id]) {
+      try {
+        const details = await getDetailsDemande(id);
+        setDetailsCache((prev) => ({ ...prev, [id]: details }));
+      } catch (e) {
+        setDetailsCache((prev) => ({ ...prev, [id]: { error: e.message } }));
+      }
+    }
   }
 
   const filtered = demandes
@@ -115,6 +134,7 @@ export default function DemandesPage({ onNavigate, user }) {
           <table className="table-clean">
             <thead>
               <tr>
+                <th style={{ width: 32 }} />
                 <th>N°</th>
                 <th>Demandeur</th>
                 <th>Capex</th>
@@ -125,36 +145,16 @@ export default function DemandesPage({ onNavigate, user }) {
             </thead>
             <tbody>
               {pageItems.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: "center", color: "var(--text-secondary)", padding: 24 }}>Aucune demande trouvée.</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--text-secondary)", padding: 24 }}>Aucune demande trouvée.</td></tr>
               ) : (
                 pageItems.map((d) => (
-                  <tr key={d.idDemande}>
-                    <td style={{ fontWeight: 600 }}>#{d.idDemande}</td>
-                    <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <Avatar name={d.utilisateurNom} />
-                        {d.utilisateurNom}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-secondary)" }}>
-                        <Calendar size={14} /> {d.capexNom}
-                      </div>
-                    </td>
-                    <td><StatutBadge statut={d.statut} /></td>
-                    <td>
-                      {d.rFx ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <FileText size={14} color="var(--text-secondary)" /> {d.rFx}
-                        </span>
-                      ) : "—"}
-                    </td>
-                    <td>
-                      <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-secondary)" }}>
-                        <Clock size={14} /> {new Date(d.createAt).toLocaleDateString("fr-FR")}
-                      </span>
-                    </td>
-                  </tr>
+                  <DemandeRow
+                    key={d.idDemande}
+                    demande={d}
+                    expanded={expandedId === d.idDemande}
+                    onToggle={() => toggleExpand(d.idDemande)}
+                    details={detailsCache[d.idDemande]}
+                  />
                 ))
               )}
             </tbody>
@@ -180,5 +180,96 @@ export default function DemandesPage({ onNavigate, user }) {
         <CreateDemandeModal onClose={() => setShowModal(false)} onCreated={handleCreated} />
       )}
     </AppShell>
+  );
+}
+
+function DemandeRow({ demande, expanded, onToggle, details }) {
+  return (
+    <>
+      <tr onClick={onToggle} style={{ cursor: "pointer" }}>
+        <td style={{ width: 40, textAlign: "center", padding: "14px 0" }}>
+  <ChevronRight
+    size={16}
+    style={{
+      color: "#667085",
+      transition: "transform 0.15s ease",
+      transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+    }}
+  />
+</td>
+        <td style={{ fontWeight: 600 }}>#{demande.idDemande}</td>
+        <td>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Avatar name={demande.utilisateurNom} />
+            {demande.utilisateurNom}
+          </div>
+        </td>
+        <td>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-secondary)" }}>
+            <Calendar size={14} /> {demande.capexNom}
+          </div>
+        </td>
+        <td><StatutBadge statut={demande.statut} /></td>
+        <td>
+          {demande.rFx ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <FileText size={14} color="var(--text-secondary)" /> {demande.rFx}
+            </span>
+          ) : "—"}
+        </td>
+        <td>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-secondary)" }}>
+            <Clock size={14} /> {new Date(demande.createAt).toLocaleDateString("fr-FR")}
+          </span>
+        </td>
+      </tr>
+
+      {expanded && (
+        <tr>
+          <td colSpan={7} style={{ background: "var(--bg-page)", padding: "16px 20px", cursor: "default" }}>
+            <DemandeDetails details={details} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+function DemandeDetails({ details }) {
+  if (!details) return <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: 0 }}>Chargement des articles...</p>;
+  if (details.error) return <p style={{ color: "var(--red-fg)", fontSize: 13, margin: 0 }}>{details.error}</p>;
+  if (details.length === 0) return <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: 0 }}>Aucun article sur cette demande.</p>;
+
+  const total = details.reduce((sum, d) => sum + d.quantite * d.prix, 0);
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <thead>
+        <tr>
+          <th style={{ textAlign: "left", padding: "4px 8px", color: "var(--text-secondary)", fontWeight: 600 }}>Article</th>
+          <th style={{ textAlign: "left", padding: "4px 8px", color: "var(--text-secondary)", fontWeight: 600 }}>Quantité</th>
+          <th style={{ textAlign: "left", padding: "4px 8px", color: "var(--text-secondary)", fontWeight: 600 }}>Prix unitaire</th>
+          <th style={{ textAlign: "left", padding: "4px 8px", color: "var(--text-secondary)", fontWeight: 600 }}>Sous-total</th>
+          <th style={{ textAlign: "left", padding: "4px 8px", color: "var(--text-secondary)", fontWeight: 600 }}>Devis</th>
+        </tr>
+      </thead>
+      <tbody>
+        {details.map((line) => (
+          <tr key={line.id}>
+            <td style={{ padding: "6px 8px", borderTop: "1px solid var(--border-soft)" }}>{line.article}</td>
+            <td style={{ padding: "6px 8px", borderTop: "1px solid var(--border-soft)" }}>{line.quantite}</td>
+            <td style={{ padding: "6px 8px", borderTop: "1px solid var(--border-soft)" }}>{line.prix.toLocaleString("fr-FR")} MAD</td>
+            <td style={{ padding: "6px 8px", borderTop: "1px solid var(--border-soft)" }}>{(line.quantite * line.prix).toLocaleString("fr-FR")} MAD</td>
+            <td style={{ padding: "6px 8px", borderTop: "1px solid var(--border-soft)" }}>{line.devis || "—"}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colSpan={3} style={{ padding: "8px", borderTop: "1px solid var(--border-soft)" }}><strong>Total</strong></td>
+          <td colSpan={2} style={{ padding: "8px", borderTop: "1px solid var(--border-soft)" }}><strong>{total.toLocaleString("fr-FR")} MAD</strong></td>
+        </tr>
+      </tfoot>
+    </table>
   );
 }
