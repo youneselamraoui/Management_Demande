@@ -13,5 +13,6 @@ public class ConsommationCapexDto
     public string NomCapex { get; set; } = string.Empty;
     public decimal BudgetTotal { get; set; }
     public decimal ResteBudget { get; set; }
+    public decimal MontantEnAttente { get; set; }
     public List<ConsommationDepartementDto> ParDepartement { get; set; } = new();
 }

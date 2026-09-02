@@ -1,17 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import DemandesPage from './components/DemandesPage';
-import ConsommationCapex from './views/ConsommationCapex';
-import CapexGraphes from "./views/CapexGraphes.jsx";
+import { useState } from "react";
+import DemandesPage from "./views/DemandesPage";
+import SuiviCapex from "./views/SuiviCapex";
+
+const CURRENT_USER = { name: "Youssef A.", role: "Finance Dept" }; // à remplacer par ton auth réelle
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DemandesPage />} />
-        <Route path="/consommation-capex" element={<ConsommationCapex />} />
-        <Route path="/capex-graphes" element={<CapexGraphes />} />
-      </Routes>
-    </BrowserRouter>
+  const [page, setPage] = useState("demandes");
+
+  return page === "demandes" ? (
+    <DemandesPage onNavigate={setPage} user={CURRENT_USER} />
+  ) : (
+    <SuiviCapex onNavigate={setPage} user={CURRENT_USER} />
   );
 }
 

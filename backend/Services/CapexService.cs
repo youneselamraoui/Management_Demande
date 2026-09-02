@@ -32,20 +32,22 @@ public class CapexService : ICapexService
     }
 
     public async Task<ConsommationCapexDto?> GetConsommationAsync(int capexId)
+{
+    var capex = await _repo.GetByIdAsync(capexId);
+    if (capex is null) return null;
+
+    var parDepartement = await _repo.GetConsommationParDepartementAsync(capexId);
+    var montantEnAttente = await _repo.GetMontantEnAttenteAsync(capexId);   // ← ajouté
+
+    return new ConsommationCapexDto
     {
-        var capex = await _repo.GetByIdAsync(capexId);
-        if (capex is null) return null;
-
-        var parDepartement = await _repo.GetConsommationParDepartementAsync(capexId);
-
-        return new ConsommationCapexDto
-        {
-            CapexId = capex.CapexId,
-            NomCapex = capex.NomCapex,
-            BudgetTotal = capex.BudgetTotal,
-            ResteBudget = capex.ResteBudget,
-            ParDepartement = parDepartement
-        };
-    }
+        CapexId = capex.CapexId,
+        NomCapex = capex.NomCapex,
+        BudgetTotal = capex.BudgetTotal,
+        ResteBudget = capex.ResteBudget,
+        MontantEnAttente = montantEnAttente,
+        ParDepartement = parDepartement
+    };
+}
 }
 // no more explicit ICapexService.GetConsommationAsync stub
