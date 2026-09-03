@@ -1,24 +1,41 @@
-// Services/DepartementService.cs
-using backend.Data.Repositories;
 using backend.DTOs;
 using backend.Models;
 using backend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using EfDepartement = backend.Data.EfModels.Departement;
 
 namespace backend.Services;
 
 public class DepartementService : IDepartementService
 {
-    private readonly IDepartementRepository _repo;
-    public DepartementService(IDepartementRepository repo) => _repo = repo;
+    private readonly backend.Data.EfModels.ProjetDbContext _context;
+    public DepartementService(backend.Data.EfModels.ProjetDbContext context) => _context = context;
 
-    public Task<Departement?> GetDepartementAsync(int id) => _repo.GetByIdAsync(id);
-    public Task<List<Departement>> GetAllDepartementsAsync() => _repo.GetAllAsync();
+    public async Task<Departement?> GetDepartementAsync(int id)
+    {
+        var entity = await _context.Departements.FindAsync(id);
+        return entity is null ? null : MapToModel(entity);
+    }
+
+    public async Task<List<Departement>> GetAllDepartementsAsync()
+    {
+        var entities = await _context.Departements.AsNoTracking().ToListAsync();
+        return entities.Select(MapToModel).ToList();
+    }
 
     public async Task<Departement> CreateDepartementAsync(CreateDepartementDto dto)
     {
-        var departement = new Departement { Nom = dto.Nom };
-        var newId = await _repo.AddAsync(departement);
-        departement.Id = newId;
-        return departement;
+        var entity = new EfDepartement { Nom = dto.Nom };
+
+        _context.Departements.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return MapToModel(entity);
     }
+
+    private static Departement MapToModel(EfDepartement entity) => new()
+    {
+        Id = entity.Id,
+        Nom = entity.Nom
+    };
 }

@@ -104,7 +104,7 @@ const resteBudget = budgetTotal - totalConsomme;
                   </Card.Title>
                   <Card.Subtitle className="text-muted mb-3">
                     {consommation.nomCapex} — Budget total :{" "}
-                    {budgetTotal.toLocaleString("fr-FR")} MAD
+                    {budgetTotal.toLocaleString("fr-FR")} $
                   </Card.Subtitle>
 
                   {chartData.length === 0 ? (
@@ -136,7 +136,7 @@ const resteBudget = budgetTotal - totalConsomme;
                         </Pie>
                         <Tooltip
                           formatter={(value) =>
-                            `${value.toLocaleString("fr-FR")} MAD`
+                            `${value.toLocaleString("fr-FR")} $`
                           }
                         />
                         <Legend verticalAlign="bottom" height={36} />
@@ -179,7 +179,7 @@ const resteBudget = budgetTotal - totalConsomme;
                             {d.departementNom}
                           </span>
                           <strong>
-                            {d.montantConsomme.toLocaleString("fr-FR")} MAD
+                            {d.montantConsomme.toLocaleString("fr-FR")} $
                           </strong>
                         </li>
                       ))}
@@ -189,7 +189,7 @@ const resteBudget = budgetTotal - totalConsomme;
                   <hr />
                   <div className="d-flex justify-content-between">
                     <span>Reste budget</span>
-                    <strong>{resteBudget.toLocaleString("fr-FR")} MAD</strong>
+                    <strong>{resteBudget.toLocaleString("fr-FR")} $</strong>
                   </div>
                 </Card.Body>
               </Card>

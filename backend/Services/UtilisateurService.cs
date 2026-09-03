@@ -1,36 +1,69 @@
-// Services/UtilisateurService.cs
-using backend.Data.Repositories;
 using backend.DTOs;
 using backend.Models;
 using backend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using EfUtilisateur = backend.Data.EfModels.Utilisateur;
 
 namespace backend.Services;
 
 public class UtilisateurService : IUtilisateurService
 {
-    private readonly IUtilisateurRepository _repo;
-    private readonly IDepartementRepository _departementRepo;
+    private readonly backend.Data.EfModels.ProjetDbContext _context;
+    public UtilisateurService(backend.Data.EfModels.ProjetDbContext context) => _context = context;
 
-    public UtilisateurService(IUtilisateurRepository repo, IDepartementRepository departementRepo)
+    public async Task<Utilisateur?> GetUtilisateurAsync(int id)
     {
-        _repo = repo;
-        _departementRepo = departementRepo;
+        var entity = await _context.Utilisateurs
+            .Include(u => u.Departement)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        return entity is null ? null : MapToModel(entity);
     }
 
-    public Task<Utilisateur?> GetUtilisateurAsync(int id) => _repo.GetByIdAsync(id);
-    public Task<List<Utilisateur>> GetAllUtilisateursAsync() => _repo.GetAllAsync();
+    public async Task<List<Utilisateur>> GetAllUtilisateursAsync()
+    {
+        var entities = await _context.Utilisateurs
+            .Include(u => u.Departement)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return entities.Select(MapToModel).ToList();
+    }
 
     public async Task<Utilisateur> CreateUtilisateurAsync(CreateUtilisateurDto dto)
     {
         // Règle métier : vérifier que le département existe avant d'insérer
-        var departement = await _departementRepo.GetByIdAsync(dto.DepartementID);
+        var departement = await _context.Departements
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == dto.DepartementID);
+
         if (departement is null)
             throw new BusinessException($"Le département {dto.DepartementID} n'existe pas.");
 
-        var utilisateur = new Utilisateur { Nom = dto.Nom, DepartementID = dto.DepartementID };
-        var newId = await _repo.AddAsync(utilisateur);
-        utilisateur.Id = newId;
-        utilisateur.DepartementNom = departement.Nom;
-        return utilisateur;
+        var entity = new EfUtilisateur
+        {
+            Nom = dto.Nom,
+            DepartementId = dto.DepartementID
+        };
+
+        _context.Utilisateurs.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return new Utilisateur
+        {
+            Id = entity.Id,
+            Nom = entity.Nom,
+            DepartementID = entity.DepartementId,
+            DepartementNom = departement.Nom
+        };
     }
+
+    private static Utilisateur MapToModel(EfUtilisateur entity) => new()
+    {
+        Id = entity.Id,
+        Nom = entity.Nom,
+        DepartementID = entity.DepartementId,
+        DepartementNom = entity.Departement?.Nom ?? string.Empty
+    };
 }

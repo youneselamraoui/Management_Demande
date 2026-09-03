@@ -147,7 +147,7 @@ function ConsommationCapex() {
 
                   <div className="text-start">
                     <div className="d-flex justify-content-between small mb-1">
-                      <span>Consommé : {consomme.toLocaleString("fr-FR")} MAD</span>
+                      <span>Consommé : {consomme.toLocaleString("fr-FR")} $</span>
                       <span>{pctConsomme.toFixed(1)}%</span>
                     </div>
                     <ProgressBar
@@ -156,7 +156,7 @@ function ConsommationCapex() {
                     />
                     <div className="text-muted small mt-2">
                       <i className="fa fa-history me-1" />
-                      Budget total : {budgetTotal.toLocaleString("fr-FR")} MAD
+                      Budget total : {budgetTotal.toLocaleString("fr-FR")} $
                     </div>
                   </div>
                 </Card.Body>
@@ -205,7 +205,7 @@ function ConsommationCapex() {
                               {d.departementNom}
                             </td>
                             <td className="text-end">
-                              {d.montantConsomme.toLocaleString("fr-FR")} MAD
+                              {d.montantConsomme.toLocaleString("fr-FR")} $
                             </td>
                             <td className="text-end">
                               {budgetTotal > 0
@@ -223,7 +223,7 @@ function ConsommationCapex() {
                           <strong>Reste budget</strong>
                         </td>
                         <td colSpan={2} className="text-end">
-                          <strong>{resteBudget.toLocaleString("fr-FR")} MAD</strong>
+                          <strong>{resteBudget.toLocaleString("fr-FR")} $</strong>
                         </td>
                       </tr>
                     </tfoot>

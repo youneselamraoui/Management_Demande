@@ -110,11 +110,11 @@ export default function Dashboard({ onNavigate, user }) {
       </header>
 
       <section className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Budget Total" value={`${budgetTotal.toLocaleString("fr-FR")} MAD`} icon={<CreditCard className="size-4" />} footnote="Alloué pour l'année en cours" />
-        <StatCard label="Consommé" value={`${totalConsomme.toLocaleString("fr-FR")} MAD`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} />
+        <StatCard label="Budget Total" value={`${budgetTotal.toLocaleString("fr-FR")} $`} icon={<CreditCard className="size-4" />} footnote="Alloué pour l'année en cours" />
+        <StatCard label="Consommé" value={`${totalConsomme.toLocaleString("fr-FR")} $`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} />
         <StatCard
             label="Reste Budget"
-            value={`${resteBudget.toLocaleString("fr-FR")} MAD`}
+            value={`${resteBudget.toLocaleString("fr-FR")} $`}
             icon={<img src={logo} alt="logo" className="size-4 object-contain" />}
             footnote={`${pctRestant.toFixed(0)}% disponible`}
         />
@@ -140,7 +140,7 @@ export default function Dashboard({ onNavigate, user }) {
                 <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} width={50} />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, border: "1px solid var(--color-border)", fontSize: 12 }}
-                  formatter={(v) => [`${v.toLocaleString("fr-FR")} MAD`, "Montant"]}
+                  formatter={(v) => [`${v.toLocaleString("fr-FR")} $`, "Montant"]}
                 />
                 <Area type="monotone" dataKey="value" stroke="var(--color-chart-1)" strokeWidth={2.5} fill="url(#trendFill)" dot={{ r: 3, fill: "var(--color-card)", strokeWidth: 2 }} />
               </AreaChart>
@@ -163,7 +163,7 @@ export default function Dashboard({ onNavigate, user }) {
                 <li key={d.name} className="flex items-center gap-2 text-sm">
                   <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
                   <span className="flex-1 truncate text-muted-foreground">{d.name}</span>
-                  <span className="font-semibold">{d.value.toLocaleString("fr-FR")} MAD</span>
+                  <span className="font-semibold">{d.value.toLocaleString("fr-FR")} $</span>
                   <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">{pct.toFixed(0)}%</span>
                 </li>
               );
@@ -248,7 +248,7 @@ function DonutRing({ data, total }) {
         {total.toLocaleString("fr-FR")}
       </text>
       <text x="100" y="118" textAnchor="middle" fontSize="12" fill="var(--color-muted-foreground)">
-        MAD consommé
+        $ consommé
       </text>
     </svg>
   );

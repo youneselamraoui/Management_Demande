@@ -102,14 +102,14 @@ export default function SuiviCapex({ onNavigate, user }) {
         className="mt-6 grid gap-4"
         style={{ gridTemplateColumns: `repeat(${1 + highlighted.length}, minmax(0, 1fr))` }}
       >
-        <StatCard label="Budget Total" value={`${data.budgetTotal.toLocaleString("fr-FR")} MAD`} icon={<CreditCard className="size-4" />} />
+        <StatCard label="Budget Total" value={`${data.budgetTotal.toLocaleString("fr-FR")} $`} icon={<CreditCard className="size-4" />} />
         {highlighted.map((d, i) => {
           const Icon = DEPT_ICONS[i % DEPT_ICONS.length];
           return (
             <StatCard
               key={d.departementNom}
               label={`Consommation ${d.departementNom}`}
-              value={`${d.montantConsomme.toLocaleString("fr-FR")} MAD`}
+              value={`${d.montantConsomme.toLocaleString("fr-FR")} $`}
               icon={<Icon className="size-4" />}
             />
           );
@@ -122,7 +122,7 @@ export default function SuiviCapex({ onNavigate, user }) {
             <div>
               <h2 className="font-bold">Répartition de la consommation</h2>
               <p className="text-xs text-muted-foreground">
-                {data.nomCapex} — Budget total : {data.budgetTotal.toLocaleString("fr-FR")} MAD
+                {data.nomCapex} — Budget total : {data.budgetTotal.toLocaleString("fr-FR")} $
               </p>
             </div>
             <span className="rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
@@ -149,7 +149,7 @@ export default function SuiviCapex({ onNavigate, user }) {
                 {consomme.toLocaleString("fr-FR")}
               </text>
               <text x="110" y="126" textAnchor="middle" fontSize="12" fill="var(--color-muted-foreground)">
-                MAD Utilisé
+                $ Utilisé
               </text>
             </svg>
           </div>
@@ -159,7 +159,7 @@ export default function SuiviCapex({ onNavigate, user }) {
             <div>
               <strong className="block text-foreground">Aperçu budgétaire</strong>
               La consommation totale est de {pctConsomme.toFixed(0)}% sur ce Capex. Le reste à engager
-              s'élève à {resteBudgetReel.toLocaleString("fr-FR")} MAD.
+              s'élève à {resteBudgetReel.toLocaleString("fr-FR")} $.
             </div>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function SuiviCapex({ onNavigate, user }) {
                   </div>
                   <div className="flex-1 text-sm font-semibold">{d.departementNom}</div>
                   <div className="text-right">
-                    <div className="font-semibold">{d.montantConsomme.toLocaleString("fr-FR")} MAD</div>
+                    <div className="font-semibold">{d.montantConsomme.toLocaleString("fr-FR")} $</div>
                     <span className="mt-0.5 inline-block rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       {pct.toFixed(0)}%
                     </span>
@@ -202,7 +202,7 @@ export default function SuiviCapex({ onNavigate, user }) {
                 <div className="text-xs text-muted-foreground">Fonds disponibles</div>
               </div>
               <div className="text-right">
-                <div className="font-semibold">{resteBudgetReel.toLocaleString("fr-FR")} MAD</div>
+                <div className="font-semibold">{resteBudgetReel.toLocaleString("fr-FR")} $</div>
                 <span className="mt-0.5 inline-block rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                   {(100 - pctConsomme).toFixed(0)}%
                 </span>
@@ -217,7 +217,7 @@ export default function SuiviCapex({ onNavigate, user }) {
               </div>
               <div className="mt-2.5 flex justify-between text-sm">
                 <span>Prévisionnel (consommé + en attente)</span>
-                <span>{previsionnel.toLocaleString("fr-FR")} MAD</span>
+                <span>{previsionnel.toLocaleString("fr-FR")} $</span>
               </div>
               <div className="mt-2">
                 <ProgressBar percent={data.budgetTotal > 0 ? (previsionnel / data.budgetTotal) * 100 : 0} color="var(--color-primary)" />

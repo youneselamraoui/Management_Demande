@@ -1,53 +1,85 @@
-using backend.Data.Repositories;
 using backend.DTOs;
 using backend.Models;
 using backend.Services.Interfaces;
-
+using Microsoft.EntityFrameworkCore;
+using EfCapex = backend.Data.EfModels.Capex;
 
 namespace backend.Services;
 
 public class CapexService : ICapexService
 {
-    private readonly ICapexRepository _repo;
-    public CapexService(ICapexRepository repo) => _repo = repo;
+    private readonly backend.Data.EfModels.ProjetDbContext _context;
+    public CapexService(backend.Data.EfModels.ProjetDbContext context) => _context = context;
 
-    public Task<Capex?> GetCapexAsync(int id) => _repo.GetByIdAsync(id);
-    public Task<List<Capex>> GetAllCapexAsync() => _repo.GetAllAsync();
+    public async Task<Capex?> GetCapexAsync(int id)
+    {
+        var entity = await _context.Capexes.FindAsync(id);
+        return entity is null ? null : MapToModel(entity);
+    }
+
+    public async Task<List<Capex>> GetAllCapexAsync()
+    {
+        var entities = await _context.Capexes.AsNoTracking().ToListAsync();
+        return entities.Select(MapToModel).ToList();
+    }
 
     public async Task<Capex> CreateCapexAsync(CreateCapexDto dto)
     {
         if (dto.BudgetTotal < 0)
             throw new BusinessException("Le budget total ne peut pas être négatif.");
 
-        var capex = new Capex
+        var entity = new EfCapex
         {
             NomCapex = dto.NomCapex,
             BudgetTotal = dto.BudgetTotal,
             ResteBudget = dto.BudgetTotal
         };
 
-        var newId = await _repo.AddAsync(capex);
-        capex.CapexId = newId;
-        return capex;
+        _context.Capexes.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return MapToModel(entity);
     }
 
     public async Task<ConsommationCapexDto?> GetConsommationAsync(int capexId)
-{
-    var capex = await _repo.GetByIdAsync(capexId);
-    if (capex is null) return null;
-
-    var parDepartement = await _repo.GetConsommationParDepartementAsync(capexId);
-    var montantEnAttente = await _repo.GetMontantEnAttenteAsync(capexId);   // ← ajouté
-
-    return new ConsommationCapexDto
     {
-        CapexId = capex.CapexId,
-        NomCapex = capex.NomCapex,
-        BudgetTotal = capex.BudgetTotal,
-        ResteBudget = capex.ResteBudget,
-        MontantEnAttente = montantEnAttente,
-        ParDepartement = parDepartement
+        var entity = await _context.Capexes.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.CapexId == capexId);
+        if (entity is null) return null;
+
+        var parDepartement = await _context.DetailDemandes
+            .AsNoTracking()
+            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.Acceptee)
+            .GroupBy(dd => dd.Demande.Utilisateur.Departement.Nom)
+            .Select(g => new ConsommationDepartementDto
+            {
+                DepartementNom = g.Key,
+                MontantConsomme = g.Sum(dd => dd.Quantite * dd.Prix)
+            })
+            .OrderByDescending(x => x.MontantConsomme)
+            .ToListAsync();
+
+        var montantEnAttente = await _context.DetailDemandes
+            .AsNoTracking()
+            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.EnAttente)
+            .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+
+        return new ConsommationCapexDto
+        {
+            CapexId = entity.CapexId,
+            NomCapex = entity.NomCapex,
+            BudgetTotal = entity.BudgetTotal,
+            ResteBudget = entity.ResteBudget,
+            MontantEnAttente = montantEnAttente,
+            ParDepartement = parDepartement
+        };
+    }
+
+    private static Capex MapToModel(EfCapex entity) => new()
+    {
+        CapexId = entity.CapexId,
+        NomCapex = entity.NomCapex,
+        BudgetTotal = entity.BudgetTotal,
+        ResteBudget = entity.ResteBudget
     };
 }
-}
-// no more explicit ICapexService.GetConsommationAsync stub

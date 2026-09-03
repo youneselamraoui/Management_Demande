@@ -300,8 +300,8 @@ function DemandeDetails({ details }) {
           <tr key={line.id} className="border-t border-border">
             <td className="px-2 py-1.5">{line.article}</td>
             <td className="px-2 py-1.5">{line.quantite}</td>
-            <td className="px-2 py-1.5">{line.prix.toLocaleString("fr-FR")} MAD</td>
-            <td className="px-2 py-1.5">{(line.quantite * line.prix).toLocaleString("fr-FR")} MAD</td>
+            <td className="px-2 py-1.5">{line.prix.toLocaleString("fr-FR")} $</td>
+            <td className="px-2 py-1.5">{(line.quantite * line.prix).toLocaleString("fr-FR")} $</td>
             <td className="px-2 py-1.5">{line.devis || "—"}</td>
           </tr>
         ))}
@@ -309,7 +309,7 @@ function DemandeDetails({ details }) {
       <tfoot>
         <tr className="border-t border-border">
           <td colSpan={3} className="px-2 py-2"><strong>Total</strong></td>
-          <td colSpan={2} className="px-2 py-2"><strong>{total.toLocaleString("fr-FR")} MAD</strong></td>
+          <td colSpan={2} className="px-2 py-2"><strong>{total.toLocaleString("fr-FR")} $</strong></td>
         </tr>
       </tfoot>
     </table>

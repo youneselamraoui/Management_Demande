@@ -237,7 +237,7 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
               Nombre d'articles : <strong className="text-foreground">{lignes.length}</strong>
             </div>
             <div className="mt-1 text-xl font-bold text-primary">
-              Total estimé : {total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} MAD
+              Total estimé : {total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} $
             </div>
           </div>
 
