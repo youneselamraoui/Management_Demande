@@ -4,6 +4,8 @@ import { CreditCard, TrendingDown, PiggyBank, FileText, MoreHorizontal } from "l
 import { Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import AppShell from "../components/AppShell";
 import { StatCard, StatutBadge, Avatar } from "../components/ui/Primitives";
+import logo from "../assets/img/logo.png";
+
 
 const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 const DEPT_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)"];
@@ -110,7 +112,13 @@ export default function Dashboard({ onNavigate, user }) {
       <section className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Budget Total" value={`${budgetTotal.toLocaleString("fr-FR")} MAD`} icon={<CreditCard className="size-4" />} footnote="Alloué pour l'année en cours" />
         <StatCard label="Consommé" value={`${totalConsomme.toLocaleString("fr-FR")} MAD`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} />
-        <StatCard label="Reste Budget" value={`${resteBudget.toLocaleString("fr-FR")} MAD`} icon={<PiggyBank className="size-4" />} footnote={`${pctRestant.toFixed(0)}% disponible`} />
+        <StatCard
+            label="Reste Budget"
+            value={`${resteBudget.toLocaleString("fr-FR")} MAD`}
+            icon={<img src={logo} alt="logo" className="size-4 object-contain" />}
+            footnote={`${pctRestant.toFixed(0)}% disponible`}
+        />
+
         <StatCard label="En attente" value={enAttenteCount} icon={<FileText className="size-4" />} footnote={`${demandes.length} demandes au total`} />
       </section>
 
