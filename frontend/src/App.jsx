@@ -1,17 +1,22 @@
 import { useState } from "react";
 import DemandesPage from "./views/DemandesPage";
 import SuiviCapex from "./views/SuiviCapex";
+import Dashboard from "./views/Dashboard";
 
 const CURRENT_USER = { name: "Youssef A.", role: "Finance Dept" }; // à remplacer par ton auth réelle
 
-function App() {
-  const [page, setPage] = useState("demandes");
+const PAGES = {
+  dashboard: Dashboard,
+  demandes: DemandesPage,
+  suivi: SuiviCapex,
+};
 
-  return page === "demandes" ? (
-    <DemandesPage onNavigate={setPage} user={CURRENT_USER} />
-  ) : (
-    <SuiviCapex onNavigate={setPage} user={CURRENT_USER} />
-  );
+function App() {
+  const [page, setPage] = useState("dashboard");
+
+  const PageComponent = PAGES[page] ?? Dashboard;
+
+  return <PageComponent onNavigate={setPage} user={CURRENT_USER} />;
 }
 
 export default App;

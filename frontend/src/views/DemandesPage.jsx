@@ -1,7 +1,7 @@
 // src/pages/DemandesPage.jsx
 import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
-import { Search, Filter, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight } from "lucide-react";
+import { Search, Filter, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, MoreHorizontal, Pencil } from "lucide-react";
 import { StatutBadge, Avatar, StatCard } from "../components/ui/Primitives";
 import CreateDemandeModal from "../components/CreateDemandeModal";
 import { getDemandes, getDetailsDemande } from "../api/client";
@@ -78,19 +78,28 @@ export default function DemandesPage({ onNavigate, user }) {
     }).length,
   };
 
-  return (
-    <AppShell active="demandes" onNavigate={onNavigate} user={user}>
-      <div className="page-header">
+return (
+  <AppShell active="demandes" onNavigate={onNavigate} user={user}>
+    <div className="card-panel" style={{ marginBottom: 16 , opacity:0.77 }}>
+      <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
           <h1 className="page-title">Demandes d'achat</h1>
           <p className="page-subtitle">Gérez et suivez l'état de vos demandes d'investissement (Capex).</p>
         </div>
-        <button className="btn-navy" onClick={() => setShowModal(true)}>
-          <Plus size={16} /> Nouvelle demande
-        </button>
+        <div className="page-actions">
+          <button className="icon-btn-ghost" title="Plus d'options">
+            <MoreHorizontal size={18} />
+          </button>
+          <button className="icon-btn-ghost" title="Modifier">
+            <Pencil size={16} />
+          </button>
+          <button className="btn-navy" onClick={() => setShowModal(true)}>
+            <Plus size={16} /> Nouvelle demande
+          </button>
+        </div>
       </div>
 
-      <div className="card-panel" style={{ marginBottom: 16, padding: 12, display: "flex", gap: 10, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border-soft)", borderRadius: 10, padding: "9px 14px" }}>
           <Search size={16} color="var(--text-secondary)" />
           <input
@@ -125,12 +134,13 @@ export default function DemandesPage({ onNavigate, user }) {
           <ArrowUpDown size={15} />
         </button>
       </div>
+    </div>
 
-      {loading && <p style={{ color: "var(--text-secondary)" }}>Chargement...</p>}
-      {error && <p style={{ color: "var(--red-fg)" }}>{error}</p>}
+    {loading && <p style={{ color: "var(--text-secondary)" }}>Chargement...</p>}
+    {error && <p style={{ color: "var(--red-fg)" }}>{error}</p>}
 
       {!loading && !error && (
-        <div className="card-panel" style={{ padding: 0, overflow: "hidden" }}>
+        <div className="card-panel" style={{ padding: 0, overflow: "hidden", opacity:0.77 }}>
           <table className="table-clean">
             <thead>
               <tr>
@@ -170,7 +180,7 @@ export default function DemandesPage({ onNavigate, user }) {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 20, opacity:0.8 }}>
         <StatCard label="TOTAL DEMANDES" value={stats.total} icon={<FileText size={18} />} iconBg="var(--blue-bg)" iconFg="var(--blue-fg)" />
         <StatCard label="EN ATTENTE" value={String(stats.enAttente).padStart(2, "0")} icon={<Clock size={18} />} iconBg="var(--amber-bg)" iconFg="var(--amber-fg)" />
         <StatCard label={`CE MOIS (${now.toLocaleDateString("fr-FR", { month: "short" }).toUpperCase()})`} value={stats.ceMois} icon={<Calendar size={18} />} iconBg="var(--blue-bg)" iconFg="var(--blue-fg)" />
