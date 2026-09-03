@@ -3,6 +3,8 @@ using backend.Data.Repositories;
 using backend.DTOs;
 using backend.Services;
 using backend.Services.Interfaces;
+using backend.Data.EfModels;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,10 @@ builder.Services.AddCors(options =>
 
 // ─── Base de données (ADO.NET pur, sans ORM) ───
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+
+// ─── EF Core ───
+builder.Services.AddDbContext<ProjetDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // ─── Departement ───
 builder.Services.AddScoped<IDepartementRepository, DepartementRepository>();
