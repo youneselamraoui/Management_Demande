@@ -1,69 +1,77 @@
-import { ArrowUpRight, ArrowDownRight, MoreHorizontal } from "lucide-react";
+import { TrendingUp, TrendingDown, MoreHorizontal } from "lucide-react";
 
-export function StatCard({ label, value, icon, iconBg, iconFg, trend, footnote }) {
-  const isUp = trend !== undefined && trend >= 0;
+export function StatCard({ label, value, icon, trend, footnote }) {
+  const hasTrend = typeof trend === "number";
+  const up = trend >= 0;
   return (
-    <div className="card-panel stat-card">
-      <div className="stat-card-top">
-        <div className="stat-card-icon-label">
-          <div className="icon-chip icon-chip-sm" style={{ background: iconBg, color: iconFg }}>
+        <div className="rounded-2xl border border-border p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground">
             {icon}
           </div>
-          <span className="stat-card-label">{label}</span>
+          <span className="text-sm text-muted-foreground">{label}</span>
         </div>
-        <button className="stat-card-menu">
-          <MoreHorizontal size={16} />
-        </button>
+        <MoreHorizontal className="size-4 text-muted-foreground" />
       </div>
-
-      <div className="stat-card-value">{value}</div>
-
-      {trend !== undefined ? (
-        <div className="stat-card-trend-row">
-          <span className={`trend-badge ${isUp ? "trend-up" : "trend-down"}`}>
-            {isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+            <p className="mt-4 text-[32px] font-extrabold tracking-tight">{value}</p>
+      {hasTrend ? (
+        <div className="mt-2 flex items-center gap-2">
+          <span
+            className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+              up ? "bg-success-soft text-success" : "bg-danger-soft text-destructive"
+            }`}
+          >
+            {up ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
             {Math.abs(trend).toFixed(1)}%
           </span>
-          <span className="stat-card-trend-text">vs mois dernier</span>
+          <span className="text-[11px] text-muted-foreground">vs mois dernier</span>
         </div>
       ) : footnote ? (
-        <div className="stat-card-footnote">{footnote}</div>
+        <p className="mt-2 text-[11px] text-muted-foreground">{footnote}</p>
       ) : null}
     </div>
   );
 }
 
+const STATUT_STYLES = {
+  EnAttente: "bg-warning-soft text-warning",
+  Acceptee: "bg-success-soft text-success",
+  Rejetee: "bg-danger-soft text-destructive",
+};
+const STATUT_LABELS = {
+  EnAttente: "En attente",
+  Acceptee: "Approuvée",
+  Rejetee: "Rejetée",
+};
+
 export function StatutBadge({ statut }) {
-  const map = {
-    EnAttente: { label: "En attente", bg: "var(--amber-bg)", fg: "var(--amber-fg)" },
-    Acceptee: { label: "Approuvée", bg: "var(--green-bg)", fg: "var(--green-fg)" },
-    Rejetee: { label: "Rejetée", bg: "var(--red-bg)", fg: "var(--red-fg)" },
-  };
-  const s = map[statut] ?? { label: statut, bg: "var(--gray-bg)", fg: "var(--gray-fg)" };
   return (
-    <span className="badge-pill" style={{ background: s.bg, color: s.fg }}>
-      {s.label}
+    <span
+      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
+        STATUT_STYLES[statut] ?? "bg-muted text-muted-foreground"
+      }`}
+    >
+      {STATUT_LABELS[statut] ?? statut}
     </span>
   );
 }
 
 export function Avatar({ name = "" }) {
   const initials = name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
-  const colors = ["#2E5FF2", "#17A34A", "#C2820A", "#8B3FD1", "#E1483F"];
-  const color = colors[name.length % colors.length];
   return (
-    <div className="avatar-circle" style={{ background: color }}>
+    <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
       {initials}
     </div>
   );
 }
 
-export function ProgressBar({ percent, color = "var(--navy)" }) {
+export function ProgressBar({ percent, color }) {
   return (
-    <div className="progress-track">
+    <div className="h-2 overflow-hidden rounded-full bg-muted">
       <div
-        className="progress-fill"
-        style={{ width: `${Math.min(percent, 100)}%`, background: color }}
+        className="h-full rounded-full transition-[width] duration-300"
+        style={{ width: `${Math.min(Math.max(percent, 0), 100)}%`, backgroundColor: color ?? "var(--color-primary)" }}
       />
     </div>
   );

@@ -1,21 +1,12 @@
 import { useEffect, useState } from "react";
 import { getCapex, getConsommationCapex, getDemandes, getDetailsDemande } from "../api/client";
 import { CreditCard, TrendingDown, PiggyBank, FileText, MoreHorizontal } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  ReferenceLine,
-} from "recharts";
+import { Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import AppShell from "../components/AppShell";
 import { StatCard, StatutBadge, Avatar } from "../components/ui/Primitives";
 
 const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
-const DEPT_COLORS = ["#2E5FF2", "#ED8936", "#17A34A", "#8B3FD1", "#E1483F"];
+const DEPT_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)"];
 
 export default function Dashboard({ onNavigate, user }) {
   const [consoByCapex, setConsoByCapex] = useState([]);
@@ -24,9 +15,7 @@ export default function Dashboard({ onNavigate, user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   async function load() {
     setLoading(true);
@@ -38,9 +27,7 @@ export default function Dashboard({ onNavigate, user }) {
       setConsoByCapex(consos);
 
       const accepted = dem.filter((d) => d.statut === "Acceptee");
-      const details = await Promise.all(
-        accepted.map((d) => getDetailsDemande(d.idDemande).catch(() => []))
-      );
+      const details = await Promise.all(accepted.map((d) => getDetailsDemande(d.idDemande).catch(() => [])));
 
       const byMonth = {};
       accepted.forEach((d, i) => {
@@ -67,14 +54,14 @@ export default function Dashboard({ onNavigate, user }) {
   if (error) {
     return (
       <AppShell active="dashboard" onNavigate={onNavigate} user={user}>
-        <p style={{ color: "var(--red-fg)" }}>{error}</p>
+        <p className="text-destructive">{error}</p>
       </AppShell>
     );
   }
   if (loading) {
     return (
       <AppShell active="dashboard" onNavigate={onNavigate} user={user}>
-        <p style={{ color: "var(--text-secondary)" }}>Chargement...</p>
+        <p className="text-muted-foreground">Chargement...</p>
       </AppShell>
     );
   }
@@ -87,10 +74,6 @@ export default function Dashboard({ onNavigate, user }) {
   const resteBudget = budgetTotal - totalConsomme;
   const enAttenteCount = demandes.filter((d) => d.statut === "EnAttente").length;
   const pctRestant = budgetTotal > 0 ? (resteBudget / budgetTotal) * 100 : 0;
-
-  const avgTrend = monthlyTrend.length
-    ? monthlyTrend.reduce((s, m) => s + m.value, 0) / monthlyTrend.length
-    : 0;
 
   const consommeTrend =
     monthlyTrend.length >= 2
@@ -113,165 +96,109 @@ export default function Dashboard({ onNavigate, user }) {
     color: DEPT_COLORS[i % DEPT_COLORS.length],
   }));
 
-  const recentDemandes = [...demandes]
-    .sort((a, b) => new Date(b.createAt) - new Date(a.createAt))
-    .slice(0, 5);
+  const recentDemandes = [...demandes].sort((a, b) => new Date(b.createAt) - new Date(a.createAt)).slice(0, 5);
 
   return (
     <AppShell active="dashboard" onNavigate={onNavigate} user={user}>
-      <div className="page-header">
+      <header className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="page-title">Bienvenue, {user?.name ?? "Utilisateur"}</h1>
-          <p className="page-subtitle">Voici un aperçu de vos Capex et demandes d'achat.</p>
+          <h1 className="text-2xl font-extrabold tracking-tight">Bienvenue, {user?.name ?? "Utilisateur"}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Aperçu de vos Capex et demandes d'achat.</p>
         </div>
-      </div>
+      </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16, marginBottom: 20 }}>
-        <StatCard
-          label="Budget Total"
-          value={`${budgetTotal.toLocaleString("fr-FR")} MAD`}
-          icon={<CreditCard size={16} />}
-          iconBg="var(--blue-bg)"
-          iconFg="var(--blue-fg)"
-          footnote="Alloué pour l'année en cours"
-        />
-        <StatCard
-          label="Consommé"
-          value={`${totalConsomme.toLocaleString("fr-FR")} MAD`}
-          icon={<TrendingDown size={16} />}
-          iconBg="var(--orange-bg)"
-          iconFg="var(--orange-fg)"
-          trend={consommeTrend}
-        />
-        <StatCard
-          label="Reste Budget"
-          value={`${resteBudget.toLocaleString("fr-FR")} MAD`}
-          icon={<PiggyBank size={16} />}
-          iconBg="var(--green-bg)"
-          iconFg="var(--green-fg)"
-          footnote={`${pctRestant.toFixed(0)}% disponible`}
-        />
-        <StatCard
-          label="En attente"
-          value={enAttenteCount}
-          icon={<FileText size={16} />}
-          iconBg="var(--amber-bg)"
-          iconFg="var(--amber-fg)"
-          footnote={`${demandes.length} demandes au total`}
-        />
-      </div>
+      <section className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Budget Total" value={`${budgetTotal.toLocaleString("fr-FR")} MAD`} icon={<CreditCard className="size-4" />} footnote="Alloué pour l'année en cours" />
+        <StatCard label="Consommé" value={`${totalConsomme.toLocaleString("fr-FR")} MAD`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} />
+        <StatCard label="Reste Budget" value={`${resteBudget.toLocaleString("fr-FR")} MAD`} icon={<PiggyBank className="size-4" />} footnote={`${pctRestant.toFixed(0)}% disponible`} />
+        <StatCard label="En attente" value={enAttenteCount} icon={<FileText className="size-4" />} footnote={`${demandes.length} demandes au total`} />
+      </section>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 20, marginBottom: 20 }}>
-        <div className="card-panel">
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-            <div>
-              <h2 className="card-panel-title">Tendance mensuelle</h2>
-              <p className="card-panel-subtitle">Montant consommé (demandes approuvées) sur 12 mois</p>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={monthlyTrend}>
-              <defs>
-                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2E5FF2" stopOpacity={0.18} />
-                  <stop offset="100%" stopColor="#2E5FF2" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke="var(--border-soft)" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} fontSize={12} />
-              <YAxis axisLine={false} tickLine={false} fontSize={12} width={50} />
-              <Tooltip formatter={(v) => `${v.toLocaleString("fr-FR")} MAD`} />
-              <ReferenceLine
-                y={avgTrend}
-                stroke="#94a3b8"
-                strokeDasharray="4 4"
-                label={{ value: "Avg", position: "insideTopLeft", fontSize: 11, fill: "#94a3b8" }}
-              />
-              {monthlyTrend.length > 0 && (
-                <ReferenceLine
-                  x={monthlyTrend[monthlyTrend.length - 1].month}
-                  stroke="#2E5FF2"
-                  strokeDasharray="3 3"
+      <section className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="rounded-2xl border border-border p-6 lg:col-span-2">
+          <h2 className="font-bold">Tendance mensuelle</h2>
+          <p className="text-xs text-muted-foreground">Montant consommé (demandes approuvées) sur 12 mois</p>
+          <div className="mt-4 h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyTrend} margin={{ left: -18, right: 8, top: 8 }}>
+                <defs>
+                  <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} width={50} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid var(--color-border)", fontSize: 12 }}
+                  formatter={(v) => [`${v.toLocaleString("fr-FR")} MAD`, "Montant"]}
                 />
-              )}
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#2E5FF2"
-                strokeWidth={3}
-                fill="url(#trendFill)"
-                dot={{ r: 3, fill: "#2E5FF2", strokeWidth: 0 }}
-                activeDot={{ r: 6 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+                <Area type="monotone" dataKey="value" stroke="var(--color-chart-1)" strokeWidth={2.5} fill="url(#trendFill)" dot={{ r: 3, fill: "var(--color-card)", strokeWidth: 2 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="card-panel">
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-            <h2 className="card-panel-title">Répartition</h2>
-            <button className="icon-btn" style={{ width: 28, height: 28 }}>
-              <MoreHorizontal size={15} />
-            </button>
+        <div className="rounded-2xl border border-border p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold">Répartition</h2>
+            <MoreHorizontal className="size-4 text-muted-foreground" />
           </div>
-
-          <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 16px" }}>
+          <div className="flex justify-center py-2">
             <DonutRing data={deptData} total={totalConsomme} />
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <ul className="mt-2 space-y-2.5">
             {deptData.map((d) => {
               const pct = totalConsomme > 0 ? (d.value / totalConsomme) * 100 : 0;
               return (
-                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
-                  <span style={{ flex: 1, color: "var(--text-secondary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-                  <strong style={{ whiteSpace: "nowrap" }}>{d.value.toLocaleString("fr-FR")} MAD</strong>
-                  <span className="badge-pill" style={{ background: "var(--gray-bg)", color: "var(--text-secondary)" }}>
-                    {pct.toFixed(0)}%
-                  </span>
-                </div>
+                <li key={d.name} className="flex items-center gap-2 text-sm">
+                  <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+                  <span className="flex-1 truncate text-muted-foreground">{d.name}</span>
+                  <span className="font-semibold">{d.value.toLocaleString("fr-FR")} MAD</span>
+                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">{pct.toFixed(0)}%</span>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
-      </div>
+      </section>
 
-      <div className="card-panel" style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px" }}>
-          <h2 className="card-panel-title" style={{ margin: 0 }}>Demandes récentes</h2>
-          <button className="btn-outline" onClick={() => onNavigate("demandes")}>
+      <section className="mt-6 rounded-2xl border border-border p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold">Demandes récentes</h2>
+          <button className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted" onClick={() => onNavigate("demandes")}>
             Voir tout
           </button>
         </div>
-        <table className="table-clean">
-          <thead>
-            <tr>
-              <th>Demandeur</th>
-              <th>Capex</th>
-              <th>Statut</th>
-              <th>RFx</th>
-              <th>Créée le</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentDemandes.map((d) => (
-              <tr key={d.idDemande} style={{ cursor: "pointer" }} onClick={() => onNavigate("demandes")}>
-                <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Avatar name={d.utilisateurNom} />
-                    {d.utilisateurNom}
-                  </div>
-                </td>
-                <td>{d.capexNom}</td>
-                <td><StatutBadge statut={d.statut} /></td>
-                <td>{d.rFx || "—"}</td>
-                <td>{new Date(d.createAt).toLocaleDateString("fr-FR")}</td>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="bg-muted text-left text-xs text-muted-foreground">
+                {["Demandeur", "Capex", "Statut", "RFx", "Créée le"].map((h) => (
+                  <th key={h} className="px-4 py-3 font-medium first:rounded-l-lg last:rounded-r-lg">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {recentDemandes.map((d) => (
+                <tr key={d.idDemande} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50" onClick={() => onNavigate("demandes")}>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={d.utilisateurNom} />
+                      {d.utilisateurNom}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-muted-foreground">{d.capexNom}</td>
+                  <td className="px-4 py-4"><StatutBadge statut={d.statut} /></td>
+                  <td className="px-4 py-4 text-muted-foreground">{d.rFx || "—"}</td>
+                  <td className="px-4 py-4 text-muted-foreground">{new Date(d.createAt).toLocaleDateString("fr-FR")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </AppShell>
   );
 }
@@ -292,15 +219,13 @@ function DonutRing({ data, total }) {
 
   return (
     <svg width="200" height="200" viewBox="0 0 200 200">
-      <circle cx="100" cy="100" r={radius} fill="none" stroke="var(--gray-bg)" strokeWidth={strokeWidth} />
+      <circle cx="100" cy="100" r={radius} fill="none" stroke="var(--color-muted)" strokeWidth={strokeWidth} />
       {slices.map((s) => {
         const segLen = Math.max(s.pct * circumference - gapDeg, 0);
         return (
           <circle
             key={s.name}
-            cx="100"
-            cy="100"
-            r={radius}
+            cx="100" cy="100" r={radius}
             fill="none"
             stroke={s.color}
             strokeWidth={strokeWidth}
@@ -311,10 +236,10 @@ function DonutRing({ data, total }) {
           />
         );
       })}
-      <text x="100" y="96" textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--text-primary)">
+      <text x="100" y="96" textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--color-foreground)">
         {total.toLocaleString("fr-FR")}
       </text>
-      <text x="100" y="118" textAnchor="middle" fontSize="12" fill="var(--text-secondary)">
+      <text x="100" y="118" textAnchor="middle" fontSize="12" fill="var(--color-muted-foreground)">
         MAD consommé
       </text>
     </svg>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { ShoppingCart, X, User, Calendar, FileText, Plus, Trash2, Info, CheckCircle2 } from "lucide-react";
 import { createDemande, getUtilisateurs, getCapex } from "../api/client";
-import "../styles/capex-theme.css";
 
 const EMPTY_LIGNE = { article: "", quantite: 1, prix: "", devis: "" };
 

@@ -9,22 +9,45 @@ import {
   ChevronDown,
   Search,
 } from "lucide-react";
-
+import logo from "../assets/img/ECI_logo1.png";
+// ajuste le chemin relatif selon où se trouve réellement AppShell.jsx par rapport à src/assets
 const MENU_ITEMS = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { key: "demandes", label: "Demandes d'achat", icon: ClipboardList },
   { key: "suivi", label: "Suivi Capex", icon: BarChart3 },
 ];
-
 const ACCOUNT_ITEMS = [
   { key: "settings", label: "Paramètres", icon: Settings },
   { key: "security", label: "Sécurité", icon: ShieldCheck },
 ];
-
 const SUPPORT_ITEMS = [{ key: "help", label: "Aide & Centre", icon: HelpCircle }];
 
 function initials(name = "") {
   return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function SectionLabel({ children }) {
+  return (
+    <p className="px-3 pt-6 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
+function NavItem({ item, active, onNavigate }) {
+  const Icon = item.icon;
+  const isActive = active === item.key;
+  return (
+    <button
+      onClick={() => onNavigate(item.key)}
+      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+        isActive ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground hover:bg-muted"
+      }`}
+    >
+      <Icon className="size-4 shrink-0" strokeWidth={1.8} />
+      <span className="flex-1 text-left">{item.label}</span>
+    </button>
+  );
 }
 
 export default function AppShell({ active, onNavigate, user, breadcrumb, children }) {
@@ -33,99 +56,89 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
     "Tableau de bord";
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">
-            <LayoutDashboard size={18} />
-          </div>
-          <span>Capex Manager</span>
+    <div className="flex min-h-screen bg-background">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto">
+         <img src={logo} alt="" className="w-full h-auto" />
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-sidebar-border px-3 py-2 text-sm text-muted-foreground">
+          <Search className="size-4" />
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+          />
+          <kbd className="rounded bg-muted px-1.5 py-0.5 text-[8px]">⌘F</kbd>
         </div>
 
-        <div className="sidebar-search">
-          <Search size={15} color="var(--text-muted)" />
-          <input type="text" placeholder="Rechercher..." />
-          <span className="sidebar-search-kbd">⌘F</span>
-        </div>
-
-        <nav className="sidebar-nav">
-          <div className="sidebar-section-label">Menu</div>
+        <SectionLabel>Menu</SectionLabel>
+        <nav className="space-y-1">
           {MENU_ITEMS.map((item) => (
-            <SidebarLink key={item.key} item={item} active={active} onNavigate={onNavigate} />
-          ))}
-
-          <div className="sidebar-section-label">Compte</div>
-          {ACCOUNT_ITEMS.map((item) => (
-            <SidebarLink key={item.key} item={item} active={active} onNavigate={onNavigate} />
-          ))}
-
-          <div className="sidebar-section-label">Support</div>
-          {SUPPORT_ITEMS.map((item) => (
-            <SidebarLink key={item.key} item={item} active={active} onNavigate={onNavigate} />
+            <NavItem key={item.key} item={item} active={active} onNavigate={onNavigate} />
           ))}
         </nav>
 
-        <div className="sidebar-footer-card">
-          <div className="sidebar-footer-icon">
-            <HelpCircle size={22} />
+        <SectionLabel>Compte</SectionLabel>
+        <nav className="space-y-1">
+          {ACCOUNT_ITEMS.map((item) => (
+            <NavItem key={item.key} item={item} active={active} onNavigate={onNavigate} />
+          ))}
+        </nav>
+
+        <SectionLabel>Support</SectionLabel>
+        <nav className="space-y-1">
+          {SUPPORT_ITEMS.map((item) => (
+            <NavItem key={item.key} item={item} active={active} onNavigate={onNavigate} />
+          ))}
+        </nav>
+
+        <div className="mt-auto rounded-2xl bg-primary p-5 text-center text-primary-foreground">
+          <div className="mx-auto grid size-12 place-items-center rounded-full bg-primary-foreground/15">
+            <HelpCircle className="size-6" />
           </div>
-          <div className="sidebar-footer-title">Besoin d'aide ?</div>
-          <p className="sidebar-footer-text">
+          <p className="mt-3 font-bold">Besoin d'aide ?</p>
+          <p className="mt-1 text-xs opacity-80">
             Contactez le support pour toute question sur vos demandes Capex.
           </p>
-          <button className="sidebar-footer-btn">Contacter le support</button>
+          <button className="mt-4 w-full rounded-lg bg-primary-foreground/15 py-2 text-sm font-semibold hover:bg-primary-foreground/25">
+            Contacter le support
+          </button>
         </div>
       </aside>
 
-      <div className="app-main">
-        <header className="topbar">
-          <div className="topbar-breadcrumb">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4 lg:px-10">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Capex Manager</span>
-            <span className="crumb-sep">›</span>
             {breadcrumb ? (
               <>
-                <button className="crumb-link" onClick={breadcrumb.onClick}>
+                <span className="text-muted-foreground/60">›</span>
+                <button onClick={breadcrumb.onClick} className="hover:text-foreground">
                   {breadcrumb.label}
                 </button>
-                <span className="crumb-sep">›</span>
               </>
             ) : null}
-            <strong>{activeLabel}</strong>
+            <span className="text-muted-foreground/60">›</span>
+            <strong className="font-semibold text-foreground">{activeLabel}</strong>
           </div>
 
-          <div className="topbar-right">
-            <button className="icon-btn">
-              <Bell size={18} />
+          <div className="flex items-center gap-3">
+            <button className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted">
+              <Bell className="size-4" />
             </button>
-            <div className="topbar-user">
-              <div className="topbar-user-text">
-                <div className="topbar-user-name">{user?.name ?? "Utilisateur"}</div>
-                <div className="topbar-user-role">{user?.role ?? ""}</div>
-              </div>
-              <div className="avatar-circle" style={{ background: "var(--navy)" }}>
+            <div className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5">
+              <div className="grid size-8 place-items-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
                 {initials(user?.name ?? "U")}
               </div>
-              <ChevronDown size={16} color="var(--text-secondary)" />
+              <div className="hidden text-left sm:block">
+                <p className="text-sm font-semibold leading-tight">{user?.name ?? "Utilisateur"}</p>
+                <p className="text-[11px] text-muted-foreground">{user?.role ?? ""}</p>
+              </div>
+              <ChevronDown className="size-4 text-muted-foreground" />
             </div>
           </div>
         </header>
 
-        <main className="page-content">{children}</main>
+        <main className="min-w-0 flex-1 space-y-6 p-6 lg:p-10">{children}</main>
       </div>
     </div>
-  );
-}
-
-function SidebarLink({ item, active, onNavigate }) {
-  const Icon = item.icon;
-  const isActive = active === item.key;
-  return (
-    <button
-      className={`sidebar-link${isActive ? " active" : ""}`}
-      onClick={() => onNavigate(item.key)}
-    >
-      <Icon size={17} />
-      <span>{item.label}</span>
-    </button>
   );
 }
