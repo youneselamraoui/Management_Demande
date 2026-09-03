@@ -122,4 +122,22 @@ public class CapexRepository : ICapexRepository
 
     return result;
 }
+
+public async Task<decimal> GetMontantEnAttenteAsync(int capexId)
+{
+    using var connection = _connectionFactory.CreateConnection();
+    await connection.OpenAsync();
+
+    using var command = new SqlCommand(@"
+        SELECT ISNULL(SUM(dd.Quantite * dd.Prix), 0)
+        FROM Demande d
+        INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
+        WHERE d.CapexId = @CapexId AND d.Statut = @Statut", connection);
+
+    command.Parameters.AddWithValue("@CapexId", capexId);
+    command.Parameters.AddWithValue("@Statut", StatutDemande.EnAttente.ToString());
+
+    return (decimal)(await command.ExecuteScalarAsync())!;
+}
+
 }

@@ -1,29 +1,42 @@
-using backend.Data.Repositories;
 using backend.DTOs;
 using backend.Models;
 using backend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using EfDetailDemande = backend.Data.EfModels.DetailDemande;
 
 namespace backend.Services;
 
 public class DetailDemandeService : IDetailDemandeService
 {
-    private readonly IDetailDemandeRepository _repo;
-    private readonly IDemandeRepository _demandeRepo;
+    private readonly backend.Data.EfModels.ProjetDbContext _context;
+    public DetailDemandeService(backend.Data.EfModels.ProjetDbContext context) => _context = context;
 
-    public DetailDemandeService(IDetailDemandeRepository repo, IDemandeRepository demandeRepo)
+    public async Task<DetailDemande?> GetDetailAsync(int id)
     {
-        _repo = repo;
-        _demandeRepo = demandeRepo;
+        var entity = await _context.DetailDemandes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == id);
+
+        return entity is null ? null : MapToModel(entity);
     }
 
-    public Task<DetailDemande?> GetDetailAsync(int id) => _repo.GetByIdAsync(id);
-    public Task<List<DetailDemande>> GetByDemandeIdAsync(int demandeId) => _repo.GetByDemandeIdAsync(demandeId);
+    public async Task<List<DetailDemande>> GetByDemandeIdAsync(int demandeId)
+    {
+        var entities = await _context.DetailDemandes
+            .AsNoTracking()
+            .Where(d => d.DemandeId == demandeId)
+            .ToListAsync();
+
+        return entities.Select(MapToModel).ToList();
+    }
 
     public async Task<DetailDemande> CreateDetailAsync(CreateDetailDemandeDto dto)
     {
         // Règle métier : vérifier que la Demande parente existe
-        var demande = await _demandeRepo.GetByIdAsync(dto.DemandeId);
-        if (demande is null)
+        var demandeExiste = await _context.Demandes
+            .AsNoTracking()
+            .AnyAsync(d => d.IdDemande == dto.DemandeId);
+        if (!demandeExiste)
             throw new BusinessException($"La demande {dto.DemandeId} n'existe pas.");
 
         if (dto.Quantite <= 0)
@@ -31,7 +44,7 @@ public class DetailDemandeService : IDetailDemandeService
         if (dto.Prix < 0)
             throw new BusinessException("Le prix ne peut pas être négatif.");
 
-        var detail = new DetailDemande
+        var entity = new EfDetailDemande
         {
             DemandeId = dto.DemandeId,
             Article = dto.Article,
@@ -40,8 +53,19 @@ public class DetailDemandeService : IDetailDemandeService
             Devis = dto.Devis
         };
 
-        var newId = await _repo.AddAsync(detail);
-        detail.Id = newId;
-        return detail;
+        _context.DetailDemandes.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return MapToModel(entity);
     }
+
+    private static DetailDemande MapToModel(EfDetailDemande entity) => new()
+    {
+        Id = entity.Id,
+        DemandeId = entity.DemandeId,
+        Article = entity.Article,
+        Quantite = entity.Quantite,
+        Prix = entity.Prix,
+        Devis = entity.Devis
+    };
 }

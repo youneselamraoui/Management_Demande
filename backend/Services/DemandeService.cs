@@ -1,32 +1,51 @@
-// Services/DemandeService.cs
-using backend.Data.Repositories;
 using backend.DTOs;
 using backend.Models;
 using backend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using EfDemande = backend.Data.EfModels.Demande;
+using EfDetailDemande = backend.Data.EfModels.DetailDemande;
 
 namespace backend.Services;
 
 public class DemandeService : IDemandeService
 {
-    private readonly IDemandeRepository _repo;
-    private readonly IUtilisateurRepository _utilisateurRepo;
-    private readonly ICapexRepository _capexRepo;
+    private readonly backend.Data.EfModels.ProjetDbContext _context;
+    public DemandeService(backend.Data.EfModels.ProjetDbContext context) => _context = context;
 
-    public DemandeService(IDemandeRepository repo, IUtilisateurRepository utilisateurRepo, ICapexRepository capexRepo)
+    public async Task<Demande?> GetDemandeAsync(int id)
     {
-        _repo = repo;
-        _utilisateurRepo = utilisateurRepo;
-        _capexRepo = capexRepo;
+        var entity = await _context.Demandes
+            .Include(d => d.Utilisateur)
+            .Include(d => d.Capex)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.IdDemande == id);
+
+        return entity is null ? null : MapToModel(entity);
     }
 
-    public Task<Demande?> GetDemandeAsync(int id) => _repo.GetByIdAsync(id);
-    public Task<List<Demande>> GetAllDemandesAsync() => _repo.GetAllAsync();
+    public async Task<List<Demande>> GetAllDemandesAsync()
+    {
+        var entities = await _context.Demandes
+            .Include(d => d.Utilisateur)
+            .Include(d => d.Capex)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return entities.Select(MapToModel).ToList();
+    }
 
     public async Task<Demande> CreateDemandeAsync(CreateDemandeDto dto)
     {
-        if (await _utilisateurRepo.GetByIdAsync(dto.UtilisateurId) is null)
+        var utilisateur = await _context.Utilisateurs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == dto.UtilisateurId);
+        if (utilisateur is null)
             throw new BusinessException($"L'utilisateur {dto.UtilisateurId} n'existe pas.");
-        if (await _capexRepo.GetByIdAsync(dto.CapexId) is null)
+
+        var capex = await _context.Capexes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.CapexId == dto.CapexId);
+        if (capex is null)
             throw new BusinessException($"Le Capex {dto.CapexId} n'existe pas.");
 
         if (dto.Articles is null || dto.Articles.Count == 0)
@@ -42,23 +61,57 @@ public class DemandeService : IDemandeService
                 throw new BusinessException($"Prix invalide pour '{ligne.Article}'.");
         }
 
-        var demande = new Demande
+        var entity = new EfDemande
         {
             UtilisateurId = dto.UtilisateurId,
             CapexId = dto.CapexId,
-            RFx = dto.RFx,
+            Rfx = dto.RFx,
             Statut = StatutDemande.EnAttente
         };
 
-        var details = dto.Articles.Select(a => new DetailDemande
+        foreach (var a in dto.Articles)
         {
-            Article = a.Article,
-            Quantite = a.Quantite,
-            Prix = a.Prix,
-            Devis = a.Devis
-        }).ToList();
+            entity.DetailDemandes.Add(new EfDetailDemande
+            {
+                Article = a.Article,
+                Quantite = a.Quantite,
+                Prix = a.Prix,
+                Devis = a.Devis
+            });
+        }
 
-        var newId = await _repo.AddWithDetailsAsync(demande, details);
-        return (await _repo.GetByIdAsync(newId))!;
+        // EF insère Demande + tous les DetailDemande liés en une seule transaction implicite
+        _context.Demandes.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return new Demande
+        {
+            IdDemande = entity.IdDemande,
+            UtilisateurId = entity.UtilisateurId,
+            UtilisateurNom = utilisateur.Nom,
+            Statut = entity.Statut,
+            CapexId = entity.CapexId,
+            CapexNom = capex.NomCapex,
+            RFx = entity.Rfx,
+            CreateAt = entity.CreateAt,
+            DateValidateChef = entity.DateValidateChef,
+            DateValidateFinance = entity.DateValidateFinance,
+            DateValidateDirecteur = entity.DateValidateDirecteur
+        };
     }
+
+    private static Demande MapToModel(EfDemande entity) => new()
+    {
+        IdDemande = entity.IdDemande,
+        UtilisateurId = entity.UtilisateurId,
+        UtilisateurNom = entity.Utilisateur?.Nom ?? string.Empty,
+        Statut = entity.Statut, 
+        CapexId = entity.CapexId,
+        CapexNom = entity.Capex?.NomCapex ?? string.Empty,
+        RFx = entity.Rfx,
+        CreateAt = entity.CreateAt,
+        DateValidateChef = entity.DateValidateChef,
+        DateValidateFinance = entity.DateValidateFinance,
+        DateValidateDirecteur = entity.DateValidateDirecteur
+    };
 }

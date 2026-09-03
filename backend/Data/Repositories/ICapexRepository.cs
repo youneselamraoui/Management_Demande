@@ -8,4 +8,6 @@ public interface ICapexRepository
     Task<int> AddAsync(Capex capex);
     Task<bool> DecrementerResteBudgetAsync(int capexId, decimal montant);
     Task<List<ConsommationDepartementDto>> GetConsommationParDepartementAsync(int capexId);
+
+    Task<decimal> GetMontantEnAttenteAsync(int capexId);
     }

@@ -1,18 +1,22 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import DemandesPage from './components/DemandesPage';
-import ConsommationCapex from './views/ConsommationCapex';
-import CapexGraphes from "./views/CapexGraphes.jsx";
+import { useState } from "react";
+import DemandesPage from "./views/DemandesPage";
+import SuiviCapex from "./views/SuiviCapex";
+import Dashboard from "./views/Dashboard";
+
+const CURRENT_USER = { name: " A.", role: "Fin" }; // à remplacer par ton auth réelle
+
+const PAGES = {
+  dashboard: Dashboard,
+  demandes: DemandesPage,
+  suivi: SuiviCapex,
+};
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DemandesPage />} />
-        <Route path="/consommation-capex" element={<ConsommationCapex />} />
-        <Route path="/capex-graphes" element={<CapexGraphes />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  const [page, setPage] = useState("dashboard");
+
+  const PageComponent = PAGES[page] ?? Dashboard;
+
+  return <PageComponent onNavigate={setPage} user={CURRENT_USER} />;
 }
 
 export default App;
