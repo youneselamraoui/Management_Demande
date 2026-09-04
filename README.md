@@ -3,8 +3,107 @@
 Application de gestion des demandes d'achat (Capex) : création de demandes, suivi budgétaire par Capex, consommation par département, et dashboard.
 
 Monorepo composé de :
-- **backend/** — API ASP.NET Core 10.0 (C#) + Entity Framework Core 10 + SQL Server
+- **backend/** — API ASP.NET Core 10.0 (C#) + Entity Framework Core 10 + SQL Server / SQLite
 - **frontend/** — SPA React 19 + Vite 8 + Tailwind CSS 4 + Axios
+
+## Mode Single-App (comme `dotnet-sdk-10.0.400-win-x64.exe` ou `go1.27.0.windows-amd64.msi`)
+
+> **Un seul fichier pour run — sans copier le code, sans installer dotnet/node/sqlserver.**
+
+### Telecharger et lancer (utilisateur final)
+
+| Fichier | Taille | Usage |
+|---|---|---|
+| `CapexManager.exe` | ~54 Mo | **1 seul exe portable** — double-clic → app sur `http://localhost:5000` |
+| `CapexManager-portable-win-x64.zip` | ~50 Mo | Dezip + double-clic `CapexManager.exe` |
+| `CapexManager-Setup.exe` | ~55 Mo | Installateur Windows (Inno Setup) — installe dans `Program Files` + raccourci bureau/Start Menu |
+
+```
+CapexManager.exe  (double-clic)
+  -> Frontend servi sur http://localhost:5000
+  -> API sur        http://localhost:5000/api
+  -> Swagger sur    http://localhost:5000/swagger (en Development)
+  -> Base creee automatiquement:
+       - si SQL Server SQLEXPRESS detecte -> utilise projet_db (SQL Server)
+       - sinon -> cree capex.db (SQLite) a cote de l'exe, sans rien installer
+```
+
+**Aucun prerequis** : pas besoin de `.NET SDK`, `Node`, `SQL Server` — tout est embarque (self-contained `win-x64`).
+
+### Construire l'app unique (developpeur)
+
+```bash
+# Option 1 : 1-clic Windows
+build-app.bat          # ou: powershell -ExecutionPolicy Bypass -File build-app.ps1
+
+# Option 2 : manuel
+cd frontend && npm run build          # -> dist/
+cd ../backend && dotnet publish -c Release -r win-x64 --self-contained true -o publish
+# Resultat : backend/publish/CapexManager.exe  (+ wwwroot embarque)
+```
+
+**Ce que fait `build-app.ps1` :**
+1. `npm run build` dans `frontend/` → `dist/`
+2. Copie `frontend/dist` → `backend/wwwroot` (servi via `UseStaticFiles` + `MapFallbackToFile("index.html")` dans `backend/Program.cs:119-129`)
+3. `dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true` → `backend/publish/CapexManager.exe`
+4. Genere `CapexManager-portable-win-x64.zip` (portable)
+5. Si Inno Setup 6 installe (`iscc.exe`), genere `Output/CapexManager-Setup.exe` via `installer.iss` (comme `VisualStudioSetup` / `go` installer)
+
+**Details techniques single-app :**
+- `backend/backend.csproj:8-17` : `PublishSingleFile`, `SelfContained`, `RuntimeIdentifier=win-x64`, `IncludeNativeLibrariesForSelfExtract`, `AssemblyName=CapexManager`
+- `frontend/src/api/client.js:1` + `frontend/src/services/api.js:4` : `import.meta.env.PROD ? "/api" : "http://localhost:5058/api"` → en prod, meme origine (pas de CORS)
+- `backend/Program.cs:8-14` : `WebApplicationOptions { ContentRootPath = AppContext.BaseDirectory }` pour que l'exe trouve `wwwroot` meme si lance depuis un autre dossier
+- `backend/Program.cs:30-62` : probe `SqlConnection` → si SQL Server joignable utilise `UseSqlServer`, sinon fallback `UseSqlite("Data Source=capex.db")` → **app portable sans SQL Server**
+- `backend/Program.cs:73-110` : `EnsureCreated()` + seed automatique au premier lancement (plus besoin de `dotnet ef database update`)
+- `backend/Data/ProjetDbContext.cs:40` : retrait du `HasDefaultValueSql("(getdate())")` pour compatibilite SQLite + `CreateAt = DateTime.UtcNow` dans `Services/DemandeService.cs:69`
+- `backend/appsettings.json:3-4` : ajout `SqliteConnection` + `UseSqliteFallback`
+
+### Installer Inno Setup (pour generer le Setup.exe comme ta capture)
+
+1. Telecharge Inno Setup 6 : https://jrsoftware.org/isdl.php
+2. Installe (defaut `C:\Program Files (x86)\Inno Setup 6\`)
+3. `ISCC.exe installer.iss` ou relance `build-app.ps1`
+
+`installer.iss` installe `backend/publish/*` dans `{autopf}\CapexManager`, cree raccourci bureau + Start Menu, lance `CapexManager.exe` a la fin.
+
+---
+
+## Installation en 1-clic depuis le code source (dev)
+
+> Pour developper / contribuer — clone + `install.bat` comme avant.
+
+```bash
+git clone https://github.com/youneselamraoui/Management_Demande.git
+cd Management_Demande
+# double-clic sur install.bat  OU  clic droit > Executer avec PowerShell sur install.ps1
+```
+
+| Fichier | Action |
+|---|---|
+| `install.bat` | **Double-clic** — lance `install.ps1` (compatible CMD) |
+| `install.ps1` | Installe tout : `dotnet restore`, `npm install`, cree la base `projet_db`, applique `database/schema.sql` + `database/seed.sql`, verifie la liaison backend/frontend |
+| `start.bat` / `start.ps1` | **Double-clic** apres install — ouvre 2 fenetres (API + Vite) |
+| `database/schema.sql` | Schema complet genere via `dotnet ef dbcontext script` (5 tables + FK + index) |
+| `database/seed.sql` | Donnees demo idempotentes (Departements, Utilisateurs, Capex) |
+
+**Ce que fait `install.ps1` en detail :**
+1. Verifie `.NET 10` (`backend/backend.csproj:3`), `Node 18+`, `dotnet-ef` (tente `winget` si manquant)
+2. `dotnet restore` + `dotnet build` dans `backend/`
+3. `npm install` dans `frontend/` (saute si `node_modules` existe)
+4. Cree la base `projet_db` (via `master`) si absente, applique `database/schema.sql` si tables manquantes, applique `database/seed.sql` (idempotent), synchronise `__EFMigrationsHistory` avec `20260903111009_InitialCreate`
+5. Verifie que `frontend/src/api/client.js:1` + `frontend/src/services/api.js:4` pointent sur `http://localhost:5058/api` et que `backend/Program.cs:24` autorise `http://localhost:5173`
+6. Propose de lancer `start.ps1`
+
+Apres install, l'app est liee et prete :
+
+```bash
+# Option A : 1-clic
+.\start.bat
+
+# Option B : manuel (2 terminaux)
+cd backend && dotnet run      # -> http://localhost:5058/swagger
+cd frontend && npm run dev    # -> http://localhost:5173
+```
 
 ---
 

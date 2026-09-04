@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5058/api";
+const API_URL = import.meta.env.PROD ? "/api" : "http://localhost:5058/api";
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {

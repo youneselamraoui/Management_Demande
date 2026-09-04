@@ -34,6 +34,15 @@ publish/
 .DS_Store
 Thumbs.db
 
+### Capex Manager - Single App ###
+backend/wwwroot/
+backend/publish/
+backend/publish-test/
+Output/
+capex.db
+CapexManager-portable-win-x64.zip
+CapexManager-Setup.exe
+
 ### Divers ###
 *.log
 .env*

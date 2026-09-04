@@ -37,7 +37,9 @@ public partial class ProjetDbContext : DbContext
         {
             entity.HasKey(e => e.IdDemande).HasName("PK__Demande__8CE9A8CAB33538E6");
 
-            entity.Property(e => e.CreateAt).HasDefaultValueSql("(getdate())");
+            // Plus de default SQL cote serveur pour rester compatible SQL Server + SQLite
+            // La date est positionnee cote applicatif dans DemandeService (CreateAt = UtcNow)
+            entity.Property(e => e.CreateAt).IsRequired();
 
             entity.Property(e => e.Statut)
                 .HasConversion<string>()

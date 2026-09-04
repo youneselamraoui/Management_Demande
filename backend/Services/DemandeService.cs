@@ -66,7 +66,8 @@ public class DemandeService : IDemandeService
             UtilisateurId = dto.UtilisateurId,
             CapexId = dto.CapexId,
             Rfx = dto.RFx,
-            Statut = StatutDemande.EnAttente
+            Statut = StatutDemande.EnAttente,
+            CreateAt = DateTime.UtcNow
         };
 
         foreach (var a in dto.Articles)
