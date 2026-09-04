@@ -35,4 +35,17 @@ public class DemandesController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+    [HttpPut("{id}/valider")]
+public async Task<IActionResult> Valider(int id)
+{
+    try
+    {
+        var demande = await _service.ValiderDemandeAsync(id);
+        return Ok(demande);
+    }
+    catch (BusinessException ex)
+    {
+        return BadRequest(new { message = ex.Message });
+    }
+}
 }

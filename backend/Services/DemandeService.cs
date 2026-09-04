@@ -114,4 +114,31 @@ public class DemandeService : IDemandeService
         DateValidateFinance = entity.DateValidateFinance,
         DateValidateDirecteur = entity.DateValidateDirecteur
     };
+    public async Task<Demande> ValiderDemandeAsync(int id)
+{
+    var demande = await _context.Demandes
+        .Include(d => d.DetailDemandes)
+        .Include(d => d.Capex)
+        .Include(d => d.Utilisateur)
+        .FirstOrDefaultAsync(d => d.IdDemande == id);
+
+    if (demande is null)
+        throw new BusinessException($"La demande {id} n'existe pas.");
+
+    if (demande.Statut != StatutDemande.EnAttente)
+        throw new BusinessException("Cette demande a déjà été traitée.");
+
+    var montant = demande.DetailDemandes.Sum(dd => dd.Quantite * dd.Prix);
+
+    if (demande.Capex.ResteBudget < montant)
+        throw new BusinessException("Budget restant insuffisant pour valider cette demande.");
+
+    demande.Capex.ResteBudget -= montant;   // <-- entité trackée, EF détecte le changement
+    demande.Statut = StatutDemande.Acceptee;
+    demande.DateValidateFinance = DateTime.UtcNow; // ou le champ adapté selon ton workflow
+
+    await _context.SaveChangesAsync();      // <-- persiste les DEUX modifications (Demande + Capex)
+
+    return MapToModel(demande);
+}
 }

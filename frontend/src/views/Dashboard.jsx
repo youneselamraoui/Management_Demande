@@ -128,23 +128,29 @@ export default function Dashboard({ onNavigate, user }) {
           <p className="text-xs text-muted-foreground">Montant consommé (demandes approuvées) sur 12 mois</p>
           <div className="mt-4 h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyTrend} margin={{ left: -18, right: 8, top: 8 }}>
-                <defs>
-                  <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} width={50} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: "1px solid var(--color-border)", fontSize: 12 }}
-                  formatter={(v) => [`${v.toLocaleString("fr-FR")} $`, "Montant"]}
-                />
-                <Area type="monotone" dataKey="value" stroke="var(--color-chart-1)" strokeWidth={2.5} fill="url(#trendFill)" dot={{ r: 3, fill: "var(--color-card)", strokeWidth: 2 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+                <AreaChart data={monthlyTrend} margin={{ left: 0, right: 8, top: 8 }}>
+                    <defs>
+                    <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.28} />
+                        <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
+                    </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }} />
+                    <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                    width={64}
+                    tickFormatter={(v) => v.toLocaleString("fr-FR")}
+                    />
+                    <Tooltip
+                    contentStyle={{ borderRadius: 12, border: "1px solid var(--color-border)", fontSize: 12 }}
+                    formatter={(v) => [`${v.toLocaleString("fr-FR")} $`, "Montant"]}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="var(--color-chart-1)" strokeWidth={2.5} fill="url(#trendFill)" dot={{ r: 3, fill: "var(--color-card)", strokeWidth: 2 }} />
+                </AreaChart>
+                </ResponsiveContainer>
           </div>
         </div>
 
@@ -216,6 +222,7 @@ function DonutRing({ data, total }) {
   const strokeWidth = 26;
   const circumference = 2 * Math.PI * radius;
   const gapDeg = 3;
+  const MIN_VISIBLE = 4; // longueur mini garantie pour toute part > 0
 
   let cumulative = 0;
   const slices = data.map((d) => {
@@ -229,7 +236,10 @@ function DonutRing({ data, total }) {
     <svg width="200" height="200" viewBox="0 0 200 200">
       <circle cx="100" cy="100" r={radius} fill="none" stroke="var(--color-muted)" strokeWidth={strokeWidth} />
       {slices.map((s) => {
-        const segLen = Math.max(s.pct * circumference - gapDeg, 0);
+        const raw = s.pct * circumference;
+        if (raw <= 0) return null;
+        const gap = Math.min(gapDeg, raw * 0.3); // le gap ne mange jamais plus de 30% du segment
+        const segLen = Math.max(raw - gap, MIN_VISIBLE);
         return (
           <circle
             key={s.name}
