@@ -8,7 +8,7 @@ Monorepo composé de :
 
 ---
 
-## Sommaire
+## Sammary
 
 - [Prérequis (PC neuf)](#prérequis-pc-neuf)
 - [Installation — de zéro au premier run](#installation--de-zéro-au-premier-run)
