@@ -94,6 +94,8 @@ public class DemandeService : IDemandeService
             CapexNom = capex.NomCapex,
             RFx = entity.Rfx,
             CreateAt = entity.CreateAt,
+            DateValidation1 = entity.DateValidation1,
+            DateValidation2 = entity.DateValidation2,
             DateValidateChef = entity.DateValidateChef,
             DateValidateFinance = entity.DateValidateFinance,
             DateValidateDirecteur = entity.DateValidateDirecteur
@@ -110,6 +112,8 @@ public class DemandeService : IDemandeService
         CapexNom = entity.Capex?.NomCapex ?? string.Empty,
         RFx = entity.Rfx,
         CreateAt = entity.CreateAt,
+        DateValidation1 = entity.DateValidation1,
+        DateValidation2 = entity.DateValidation2,
         DateValidateChef = entity.DateValidateChef,
         DateValidateFinance = entity.DateValidateFinance,
         DateValidateDirecteur = entity.DateValidateDirecteur
@@ -133,12 +137,28 @@ public class DemandeService : IDemandeService
     if (demande.Capex.ResteBudget < montant)
         throw new BusinessException("Budget restant insuffisant pour valider cette demande.");
 
+    var maintenant = DateTime.UtcNow;
+    demande.DateValidation1 ??= maintenant;
+    demande.DateValidation2 ??= maintenant;
+    demande.DateValidateChef ??= maintenant;
+    demande.DateValidateFinance ??= maintenant;
+    demande.DateValidateDirecteur ??= maintenant;
+
+    if (!ToutesLesValidationsSontFaites(demande))
+        throw new BusinessException("Toutes les validations doivent être faites avant de valider la demande.");
+
     demande.Capex.ResteBudget -= montant;   // <-- entité trackée, EF détecte le changement
     demande.Statut = StatutDemande.Acceptee;
-    demande.DateValidateFinance = DateTime.UtcNow; // ou le champ adapté selon ton workflow
 
     await _context.SaveChangesAsync();      // <-- persiste les DEUX modifications (Demande + Capex)
 
     return MapToModel(demande);
 }
+
+private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
+    demande.DateValidation1.HasValue &&
+    demande.DateValidation2.HasValue &&
+    demande.DateValidateChef.HasValue &&
+    demande.DateValidateFinance.HasValue &&
+    demande.DateValidateDirecteur.HasValue;
 }

@@ -12,6 +12,8 @@ public class Demande
     public string? CapexNom { get; set; }
     public string? RFx { get; set; }
     public DateTime CreateAt { get; set; }
+    public DateTime? DateValidation1 { get; set; }
+    public DateTime? DateValidation2 { get; set; }
     public DateTime? DateValidateChef { get; set; }
     public DateTime? DateValidateFinance { get; set; }
     public DateTime? DateValidateDirecteur { get; set; }
