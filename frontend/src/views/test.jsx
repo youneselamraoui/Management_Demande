@@ -4,10 +4,8 @@ import { Search, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, Mor
 import { StatutBadge, Avatar, StatCard } from "../components/ui/Primitives";
 import CreateDemandeModal from "../components/CreateDemandeModal";
 import { getDemandes, getDetailsDemande, refuserDemande, validerDemande } from "../api/client";
-import { createPortal } from "react-dom";
 
-
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 const STATUTS = [
   "EnAttenteValidationAchat1",
   "EnAttenteValidationAchat2",
@@ -220,22 +218,6 @@ export default function DemandesPage({ onNavigate, user }) {
               Gérez et suivez l'état de vos demandes d'investissement (Capex).
             </p>
           </div>
-          {/*
-          <div className="flex items-center gap-2">
-            <button className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted" title="Plus d'options">
-              <MoreHorizontal className="size-4" />
-            </button>
-            <button className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted" title="Modifier">
-              <Pencil className="size-4" />
-            </button>
-            <button
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-              onClick={() => setShowModal(true)}
-            >
-              <Plus className="size-4" /> Nouvelle demande
-            </button>
-          </div>
-          */}
         </div>
 
         <div className="mt-5 flex items-center gap-3">
@@ -254,10 +236,10 @@ export default function DemandesPage({ onNavigate, user }) {
             <button
               onClick={resetFilters}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm font-medium hover:bg-muted/70"
-              title="Réinitialiser tous les filtres"
+              title="Réinitialiser les filtres"
             >
+              {activeFiltersCount} filtre{activeFiltersCount > 1 ? "s" : ""}
               <X className="size-3.5" />
-              Réinitialiser ({activeFiltersCount})
             </button>
           )}
 
@@ -275,11 +257,11 @@ export default function DemandesPage({ onNavigate, user }) {
       {error && <p className="mt-6 text-sm text-destructive">{error}</p>}
 
       {!loading && !error && (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border">
-          <div className="overflow-x-auto">
+        <div className="mt-6 rounded-2xl border border-border">
+          <div className="overflow-x-auto rounded-2xl">
             <table className="w-full min-w-[1200px] text-sm">
               <thead>
-                <tr className="bg-muted text-left text-xs text-muted-foreground">
+                <tr className="bg-muted text-left text-xs text-muted-foreground [&>th:first-child]:rounded-tl-2xl [&>th:last-child]:rounded-tr-2xl">
                   <th className="w-10 px-4 py-3" />
                   <th className="px-4 py-3 font-medium">N°</th>
                   <ColumnFilterHeader
@@ -372,7 +354,7 @@ export default function DemandesPage({ onNavigate, user }) {
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-border px-4 py-3.5 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between rounded-b-2xl border-t border-border px-4 py-3.5 text-xs text-muted-foreground">
             <span>
               Affichage de {pageItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} à{" "}
               {(page - 1) * PAGE_SIZE + pageItems.length} sur {filtered.length} demandes
@@ -414,52 +396,21 @@ export default function DemandesPage({ onNavigate, user }) {
 
 // En-tête de colonne avec filtre déroulant + recherche, réutilisable pour
 // n'importe quelle colonne (texte, statut, ou date déjà formatée en libellé).
-
-// En-tête de colonne avec filtre déroulant + recherche, réutilisable pour
-// n'importe quelle colonne (texte, statut, ou date déjà formatée en libellé).
 function ColumnFilterHeader({ label, options, selected, onChange, align = "left", className = "" }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const btnRef = useRef(null);
-  const menuRef = useRef(null);
-
-  function openMenu() {
-    if (btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 4,
-        left: align === "right" ? undefined : rect.left,
-        right: align === "right" ? window.innerWidth - rect.right : undefined,
-      });
-    }
-    setOpen(true);
-  }
+  const ref = useRef(null);
 
   useEffect(() => {
-    if (!open) return;
     function handleClickOutside(e) {
-      if (
-        btnRef.current && !btnRef.current.contains(e.target) &&
-        menuRef.current && !menuRef.current.contains(e.target)
-      ) {
+      if (ref.current && !ref.current.contains(e.target)) {
         setOpen(false);
         setQuery("");
       }
     }
-    function handleScrollOrResize() {
-      setOpen(false);
-      setQuery("");
-    }
     document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
-    };
-  }, [open]);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filteredOptions = options.filter((o) =>
     o.label.toLowerCase().includes(query.toLowerCase())
@@ -473,12 +424,8 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
   }
 
   return (
-    <th className={`relative px-4 py-3 font-medium ${className}`}>
-      <button
-        ref={btnRef}
-        className="flex items-center gap-1 hover:text-foreground"
-        onClick={() => (open ? setOpen(false) : openMenu())}
-      >
+    <th className={`relative px-4 py-3 font-medium ${className}`} ref={ref}>
+      <button className="flex items-center gap-1 hover:text-foreground" onClick={() => setOpen((v) => !v)}>
         {label}
         <ChevronRight className={`size-3 transition-transform ${open ? "rotate-90" : ""}`} />
         {isActive && (
@@ -488,12 +435,12 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
         )}
       </button>
 
-      {open && createPortal(
+      {open && (
         <div
-          ref={menuRef}
           onClick={(e) => e.stopPropagation()}
-          style={{ position: "fixed", top: position.top, left: position.left, right: position.right }}
-          className="z-50 w-56 rounded-lg border border-border bg-card p-2 text-left font-normal normal-case text-foreground shadow-[var(--shadow-card)]"
+          className={`absolute top-9 z-50 w-56 rounded-lg border border-border bg-card p-2 text-left font-normal normal-case text-foreground shadow-[var(--shadow-card)] ${
+            align === "right" ? "right-0" : "left-0"
+          }`}
         >
           <div className="mb-1.5 flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
             <Search className="size-3.5 text-muted-foreground" />
@@ -533,12 +480,12 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
               ))
             )}
           </div>
-        </div>,
-        document.body
+        </div>
       )}
     </th>
   );
 }
+
 function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser }) {
   return (
     <>
@@ -608,7 +555,7 @@ function DemandeDetails({ demande, details, onValider, onRefuser }) {
 
   const total = details.reduce((sum, d) => sum + d.quantite * d.prix, 0);
 
-    return (
+  return (
     <div>
       {datesValidation.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
