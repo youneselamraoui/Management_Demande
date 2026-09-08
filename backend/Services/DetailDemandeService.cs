@@ -35,7 +35,7 @@ public class DetailDemandeService : IDetailDemandeService
         // Règle métier : vérifier que la Demande parente existe
         var demandeExiste = await _context.Demandes
             .AsNoTracking()
-            .AnyAsync(d => d.IdDemande == dto.DemandeId);
+            .AnyAsync(d => d.Id == dto.DemandeId);
         if (!demandeExiste)
             throw new BusinessException($"La demande {dto.DemandeId} n'existe pas.");
 

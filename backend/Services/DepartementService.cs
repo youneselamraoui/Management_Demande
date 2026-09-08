@@ -11,19 +11,19 @@ public class DepartementService : IDepartementService
     private readonly backend.Data.EfModels.ProjetDbContext _context;
     public DepartementService(backend.Data.EfModels.ProjetDbContext context) => _context = context;
 
-    public async Task<Departement?> GetDepartementAsync(int id)
+    public async Task<Departements?> GetDepartementAsync(int id)
     {
         var entity = await _context.Departements.FindAsync(id);
         return entity is null ? null : MapToModel(entity);
     }
 
-    public async Task<List<Departement>> GetAllDepartementsAsync()
+    public async Task<List<Departements>> GetAllDepartementsAsync()
     {
         var entities = await _context.Departements.AsNoTracking().ToListAsync();
         return entities.Select(MapToModel).ToList();
     }
 
-    public async Task<Departement> CreateDepartementAsync(CreateDepartementDto dto)
+    public async Task<Departements> CreateDepartementAsync(CreateDepartementDto dto)
     {
         var entity = new EfDepartement { Nom = dto.Nom };
 
@@ -33,7 +33,7 @@ public class DepartementService : IDepartementService
         return MapToModel(entity);
     }
 
-    private static Departement MapToModel(EfDepartement entity) => new()
+    private static Departements MapToModel(EfDepartement entity) => new()
     {
         Id = entity.Id,
         Nom = entity.Nom

@@ -5,7 +5,7 @@ namespace backend.Data.Repositories;
 
 public interface IDepartementRepository
 {
-    Task<Departement?> GetByIdAsync(int id);
-    Task<List<Departement>> GetAllAsync();
-    Task<int> AddAsync(Departement departement);
+    Task<Departements?> GetByIdAsync(int id);
+    Task<List<Departements>> GetAllAsync();
+    Task<int> AddAsync(Departements departement);
 }

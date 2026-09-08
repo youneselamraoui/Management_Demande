@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Data.EfModels;
 
-[Table("DetailDemande")]
+[Table("DetailsDemandes")]
 public partial class DetailDemande
 {
     [Key]

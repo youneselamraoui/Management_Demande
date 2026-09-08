@@ -1,10 +1,13 @@
 namespace backend.DTOs;
+using System.Text.Json.Serialization;
 
 public class CreateDemandeDto
 {
     public int UtilisateurId { get; set; }
     public int CapexId { get; set; }
-    public string? RFx { get; set; }
+    public string? RFX { get; set; }
+    [JsonIgnore]
+    public string? RFx { get => RFX; set => RFX = value; }
     public List<CreateLigneArticleDto> Articles { get; set; } = new();
 }
 

@@ -11,7 +11,7 @@ public class DepartementRepository : IDepartementRepository
     public DepartementRepository(IDbConnectionFactory connectionFactory)
         => _connectionFactory = connectionFactory;
 
-    public async Task<Departement?> GetByIdAsync(int id)
+    public async Task<Departements?> GetByIdAsync(int id)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -27,9 +27,9 @@ public class DepartementRepository : IDepartementRepository
         return null;
     }
 
-    public async Task<List<Departement>> GetAllAsync()
+    public async Task<List<Departements>> GetAllAsync()
     {
-        var departements = new List<Departement>();
+        var departements = new List<Departements>();
 
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -43,7 +43,7 @@ public class DepartementRepository : IDepartementRepository
         return departements;
     }
 
-    public async Task<int> AddAsync(Departement departement)
+    public async Task<int> AddAsync(Departements departement)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -56,7 +56,7 @@ public class DepartementRepository : IDepartementRepository
         return (int)(await command.ExecuteScalarAsync())!;
     }
 
-    private static Departement MapToDepartement(SqlDataReader reader) => new()
+    private static Departements MapToDepartement(SqlDataReader reader) => new()
     {
         Id = reader.GetInt32(reader.GetOrdinal("Id")),
         Nom = reader.GetString(reader.GetOrdinal("Nom"))

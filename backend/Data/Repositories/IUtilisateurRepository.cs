@@ -5,7 +5,7 @@ namespace backend.Data.Repositories;
 
 public interface IUtilisateurRepository
 {
-    Task<Utilisateur?> GetByIdAsync(int id);
-    Task<List<Utilisateur>> GetAllAsync();
-    Task<int> AddAsync(Utilisateur utilisateur);
+    Task<Utilisateurs?> GetByIdAsync(int id);
+    Task<List<Utilisateurs>> GetAllAsync();
+    Task<int> AddAsync(Utilisateurs utilisateur);
 }

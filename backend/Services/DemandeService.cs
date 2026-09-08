@@ -18,7 +18,7 @@ public class DemandeService : IDemandeService
             .Include(d => d.Utilisateur)
             .Include(d => d.Capex)
             .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.IdDemande == id);
+            .FirstOrDefaultAsync(d => d.Id == id);
 
         return entity is null ? null : MapToModel(entity);
     }
@@ -65,8 +65,9 @@ public class DemandeService : IDemandeService
         {
             UtilisateurId = dto.UtilisateurId,
             CapexId = dto.CapexId,
-            Rfx = dto.RFx,
-            Statut = StatutDemande.EnAttente
+            RFX = dto.RFX,
+            Statut = StatutDemande.EnAttente,
+            CreatedAt = DateTime.UtcNow
         };
 
         foreach (var a in dto.Articles)
@@ -80,22 +81,21 @@ public class DemandeService : IDemandeService
             });
         }
 
-        // EF insère Demande + tous les DetailDemande liés en une seule transaction implicite
         _context.Demandes.Add(entity);
         await _context.SaveChangesAsync();
 
         return new Demande
         {
-            IdDemande = entity.IdDemande,
+            Id = entity.Id,
             UtilisateurId = entity.UtilisateurId,
             UtilisateurNom = utilisateur.Nom,
             Statut = entity.Statut,
             CapexId = entity.CapexId,
             CapexNom = capex.NomCapex,
-            RFx = entity.Rfx,
-            CreateAt = entity.CreateAt,
-            DateValidation1 = entity.DateValidation1,
-            DateValidation2 = entity.DateValidation2,
+            RFX = entity.RFX,
+            CreatedAt = entity.CreatedAt,
+            DateValidationAchat1 = entity.DateValidationAchat1,
+            DateValidationAchat2 = entity.DateValidationAchat2,
             DateValidateChef = entity.DateValidateChef,
             DateValidateFinance = entity.DateValidateFinance,
             DateValidateDirecteur = entity.DateValidateDirecteur
@@ -104,16 +104,16 @@ public class DemandeService : IDemandeService
 
     private static Demande MapToModel(EfDemande entity) => new()
     {
-        IdDemande = entity.IdDemande,
+        Id = entity.Id,
         UtilisateurId = entity.UtilisateurId,
         UtilisateurNom = entity.Utilisateur?.Nom ?? string.Empty,
         Statut = entity.Statut, 
         CapexId = entity.CapexId,
         CapexNom = entity.Capex?.NomCapex ?? string.Empty,
-        RFx = entity.Rfx,
-        CreateAt = entity.CreateAt,
-        DateValidation1 = entity.DateValidation1,
-        DateValidation2 = entity.DateValidation2,
+        RFX = entity.RFX,
+        CreatedAt = entity.CreatedAt,
+        DateValidationAchat1 = entity.DateValidationAchat1,
+        DateValidationAchat2 = entity.DateValidationAchat2,
         DateValidateChef = entity.DateValidateChef,
         DateValidateFinance = entity.DateValidateFinance,
         DateValidateDirecteur = entity.DateValidateDirecteur
@@ -124,7 +124,7 @@ public class DemandeService : IDemandeService
         .Include(d => d.DetailDemandes)
         .Include(d => d.Capex)
         .Include(d => d.Utilisateur)
-        .FirstOrDefaultAsync(d => d.IdDemande == id);
+        .FirstOrDefaultAsync(d => d.Id == id);
 
     if (demande is null)
         throw new BusinessException($"La demande {id} n'existe pas.");
@@ -134,12 +134,17 @@ public class DemandeService : IDemandeService
 
     var montant = demande.DetailDemandes.Sum(dd => dd.Quantite * dd.Prix);
 
-    if (demande.Capex.ResteBudget < montant)
+    // ResteBudget calculé (corrige edit direct SSMS) : BudgetTotal - somme Acceptee
+    var consommeActuel = await _context.DetailDemandes
+        .Where(dd => dd.Demande.CapexId == demande.CapexId && dd.Demande.Statut == StatutDemande.Acceptee)
+        .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+    var resteCalcule = demande.Capex.BudgetTotal - consommeActuel;
+    if (resteCalcule < montant)
         throw new BusinessException("Budget restant insuffisant pour valider cette demande.");
 
     var maintenant = DateTime.UtcNow;
-    demande.DateValidation1 ??= maintenant;
-    demande.DateValidation2 ??= maintenant;
+    demande.DateValidationAchat1 ??= maintenant;
+    demande.DateValidationAchat2 ??= maintenant;
     demande.DateValidateChef ??= maintenant;
     demande.DateValidateFinance ??= maintenant;
     demande.DateValidateDirecteur ??= maintenant;
@@ -147,18 +152,31 @@ public class DemandeService : IDemandeService
     if (!ToutesLesValidationsSontFaites(demande))
         throw new BusinessException("Toutes les validations doivent être faites avant de valider la demande.");
 
-    demande.Capex.ResteBudget -= montant;   // <-- entité trackée, EF détecte le changement
+    demande.Capex.BudgetRestant = resteCalcule - montant;
     demande.Statut = StatutDemande.Acceptee;
 
-    await _context.SaveChangesAsync();      // <-- persiste les DEUX modifications (Demande + Capex)
+    await _context.SaveChangesAsync();
 
     return MapToModel(demande);
 }
 
 private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
-    demande.DateValidation1.HasValue &&
-    demande.DateValidation2.HasValue &&
+    demande.DateValidationAchat1.HasValue &&
+    demande.DateValidationAchat2.HasValue &&
     demande.DateValidateChef.HasValue &&
     demande.DateValidateFinance.HasValue &&
     demande.DateValidateDirecteur.HasValue;
+
+    public async Task RecalculerResteBudgetAsync()
+    {
+        var capexes = await _context.Capexes.ToListAsync();
+        foreach (var c in capexes)
+        {
+            var consomme = await _context.DetailDemandes
+                .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == StatutDemande.Acceptee)
+                .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+            c.BudgetRestant = c.BudgetTotal - consomme;
+        }
+        await _context.SaveChangesAsync();
+    }
 }

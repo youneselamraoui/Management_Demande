@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Data.EfModels;
 
-[Table("Departement")]
+[Table("Departements")]
 [Index("Nom", Name = "UQ_Nom", IsUnique = true)]
 public partial class Departement
 {

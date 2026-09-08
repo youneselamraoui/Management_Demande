@@ -28,7 +28,7 @@ public class DemandesController : ControllerBase
         try
         {
             var demande = await _service.CreateDemandeAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = demande.IdDemande }, demande);
+            return CreatedAtAction(nameof(GetById), new { id = demande.Id }, demande);
         }
         catch (BusinessException ex)
         {

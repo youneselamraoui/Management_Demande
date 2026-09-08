@@ -13,14 +13,44 @@ public class CapexService : ICapexService
 
     public async Task<Capex?> GetCapexAsync(int id)
     {
-        var entity = await _context.Capexes.FindAsync(id);
-        return entity is null ? null : MapToModel(entity);
+        var entity = await _context.Capexes.AsNoTracking().FirstOrDefaultAsync(c => c.CapexId == id);
+        if (entity is null) return null;
+        var reste = await CalculateResteBudgetAsync(id, entity.BudgetTotal);
+        return MapToModel(entity, reste);
     }
 
     public async Task<List<Capex>> GetAllCapexAsync()
     {
         var entities = await _context.Capexes.AsNoTracking().ToListAsync();
-        return entities.Select(MapToModel).ToList();
+        var result = new List<Capex>();
+        foreach (var e in entities)
+        {
+            var reste = await CalculateResteBudgetAsync(e.CapexId, e.BudgetTotal);
+            result.Add(MapToModel(e, reste));
+        }
+        return result;
+    }
+
+    private async Task<decimal> CalculateResteBudgetAsync(int capexId, decimal budgetTotal)
+    {
+        var consomme = await _context.DetailDemandes
+            .AsNoTracking()
+            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.Acceptee)
+            .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+        return budgetTotal - consomme;
+    }
+
+    public async Task RecalculerResteBudgetAsync()
+    {
+        var capexes = await _context.Capexes.ToListAsync();
+        foreach (var c in capexes)
+        {
+            var consomme = await _context.DetailDemandes
+                .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == StatutDemande.Acceptee)
+                .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+            c.BudgetRestant = c.BudgetTotal - consomme;
+        }
+        await _context.SaveChangesAsync();
     }
 
     public async Task<Capex> CreateCapexAsync(CreateCapexDto dto)
@@ -32,13 +62,13 @@ public class CapexService : ICapexService
         {
             NomCapex = dto.NomCapex,
             BudgetTotal = dto.BudgetTotal,
-            ResteBudget = dto.BudgetTotal
+            BudgetRestant = dto.BudgetTotal
         };
 
         _context.Capexes.Add(entity);
         await _context.SaveChangesAsync();
 
-        return MapToModel(entity);
+        return MapToModel(entity, entity.BudgetRestant);
     }
 
     public async Task<ConsommationCapexDto?> GetConsommationAsync(int capexId)
@@ -64,22 +94,31 @@ public class CapexService : ICapexService
             .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.EnAttente)
             .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
 
+        var resteCalcule = await CalculateResteBudgetAsync(capexId, entity.BudgetTotal);
+
         return new ConsommationCapexDto
         {
             CapexId = entity.CapexId,
             NomCapex = entity.NomCapex,
             BudgetTotal = entity.BudgetTotal,
-            ResteBudget = entity.ResteBudget,
+            BudgetRestant = resteCalcule,
             MontantEnAttente = montantEnAttente,
             ParDepartement = parDepartement
         };
     }
 
+    private static Capex MapToModel(EfCapex entity, decimal resteCalcule) => new()
+    {
+        CapexId = entity.CapexId,
+        NomCapex = entity.NomCapex,
+        BudgetTotal = entity.BudgetTotal,
+        BudgetRestant = resteCalcule
+    };
     private static Capex MapToModel(EfCapex entity) => new()
     {
         CapexId = entity.CapexId,
         NomCapex = entity.NomCapex,
         BudgetTotal = entity.BudgetTotal,
-        ResteBudget = entity.ResteBudget
+        BudgetRestant = entity.BudgetRestant
     };
 }
