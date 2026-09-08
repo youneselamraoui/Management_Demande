@@ -108,7 +108,7 @@ public class CapexRepository : ICapexRepository
         ORDER BY MontantConsomme DESC", connection);
 
     command.Parameters.AddWithValue("@CapexId", capexId);
-    command.Parameters.AddWithValue("@Statut", StatutDemande.Acceptee.ToString());
+    command.Parameters.AddWithValue("@Statut", StatutDemande.BonDeCommande.ToString());
     
     using var reader = await command.ExecuteReaderAsync();
     while (await reader.ReadAsync())
@@ -132,10 +132,15 @@ public async Task<decimal> GetMontantEnAttenteAsync(int capexId)
         SELECT ISNULL(SUM(dd.Quantite * dd.Prix), 0)
         FROM Demande d
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
-        WHERE d.CapexId = @CapexId AND d.Statut = @Statut", connection);
+        WHERE d.CapexId = @CapexId AND d.Statut IN (
+            @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutDirecteur)", connection);
 
     command.Parameters.AddWithValue("@CapexId", capexId);
-    command.Parameters.AddWithValue("@Statut", StatutDemande.EnAttente.ToString());
+    command.Parameters.AddWithValue("@StatutAchat1", StatutDemande.EnAttenteValidationAchat1.ToString());
+    command.Parameters.AddWithValue("@StatutAchat2", StatutDemande.EnAttenteValidationAchat2.ToString());
+    command.Parameters.AddWithValue("@StatutChef", StatutDemande.EnAttenteValidationChef.ToString());
+    command.Parameters.AddWithValue("@StatutFinance", StatutDemande.EnAttenteValidationFinance.ToString());
+    command.Parameters.AddWithValue("@StatutDirecteur", StatutDemande.EnAttenteValidationDirecteur.ToString());
 
     return (decimal)(await command.ExecuteScalarAsync())!;
 }

@@ -1,8 +1,16 @@
 // src/components/StatutBadge.jsx
 const STATUT_STYLES = {
-  EnAttente: { bg: "#FFF4E0", color: "#9A6700", label: "En attente" },
-  Acceptee: { bg: "#E3F2E8", color: "#1B6E3C", label: "Acceptée" },
-  Rejetee: { bg: "#FDE8E8", color: "#B3261E", label: "Rejetée" },
+  EnAttenteValidationAchat1: { bg: "#FFF4E0", color: "#9A6700", label: "En attente validation achat1" },
+  EnAttenteValidationAchat2: { bg: "#FFF4E0", color: "#9A6700", label: "En attente validation achat2" },
+  EnAttenteValidationChef: { bg: "#FFF4E0", color: "#9A6700", label: "En attente validation chef" },
+  EnAttenteValidationFinance: { bg: "#FFF4E0", color: "#9A6700", label: "En attente validation finance" },
+  EnAttenteValidationDirecteur: { bg: "#FFF4E0", color: "#9A6700", label: "En attente validation directeur" },
+  BonDeCommande: { bg: "#E3F2E8", color: "#1B6E3C", label: "Bon commande" },
+  RefuseeAchat1: { bg: "#FDE8E8", color: "#B3261E", label: "Refusée achat1" },
+  RefuseeAchat2: { bg: "#FDE8E8", color: "#B3261E", label: "Refusée achat2" },
+  RefuseeChef: { bg: "#FDE8E8", color: "#B3261E", label: "Refusée chef" },
+  RefuseeFinance: { bg: "#FDE8E8", color: "#B3261E", label: "Refusée finance" },
+  RefuseeDirecteur: { bg: "#FDE8E8", color: "#B3261E", label: "Refusée directeur" },
 };
 
 export default function StatutBadge({ statut }) {

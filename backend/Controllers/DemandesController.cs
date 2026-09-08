@@ -36,16 +36,30 @@ public class DemandesController : ControllerBase
         }
     }
     [HttpPut("{id}/valider")]
-public async Task<IActionResult> Valider(int id)
-{
-    try
+    public async Task<IActionResult> Valider(int id)
     {
-        var demande = await _service.ValiderDemandeAsync(id);
-        return Ok(demande);
+        try
+        {
+            var demande = await _service.ValiderDemandeAsync(id);
+            return Ok(demande);
+        }
+        catch (BusinessException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
-    catch (BusinessException ex)
+
+    [HttpPut("{id}/refuser")]
+    public async Task<IActionResult> Refuser(int id)
     {
-        return BadRequest(new { message = ex.Message });
+        try
+        {
+            var demande = await _service.RefuserDemandeAsync(id);
+            return Ok(demande);
+        }
+        catch (BusinessException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
-}
 }

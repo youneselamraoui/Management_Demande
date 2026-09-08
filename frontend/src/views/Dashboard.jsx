@@ -28,7 +28,7 @@ export default function Dashboard({ onNavigate, user }) {
       const consos = await Promise.all(capexes.map((c) => getConsommationCapex(c.capexId)));
       setConsoByCapex(consos);
 
-      const accepted = dem.filter((d) => d.statut === "Acceptee");
+      const accepted = dem.filter((d) => d.statut === "BonDeCommande");
       const details = await Promise.all(accepted.map((d) => getDetailsDemande(d.idDemande).catch(() => [])));
 
       const byMonth = {};
@@ -74,7 +74,7 @@ export default function Dashboard({ onNavigate, user }) {
     0
   );
   const resteBudget = budgetTotal - totalConsomme;
-  const enAttenteCount = demandes.filter((d) => d.statut === "EnAttente").length;
+  const enAttenteCount = demandes.filter((d) => d.statut?.startsWith("EnAttenteValidation")).length;
   const pctRestant = budgetTotal > 0 ? (resteBudget / budgetTotal) * 100 : 0;
 
   const consommeTrend =
@@ -98,13 +98,13 @@ export default function Dashboard({ onNavigate, user }) {
     color: DEPT_COLORS[i % DEPT_COLORS.length],
   }));
 
-  const recentDemandes = [...demandes].sort((a, b) => new Date(b.createAt) - new Date(a.createAt)).slice(0, 5);
+  const recentDemandes = [...demandes].filter((d) => !String(d.statut).startsWith("Refusee")).sort((a, b) => new Date(b.createAt) - new Date(a.createAt)).slice(0, 5);
 
   return (
     <AppShell active="dashboard" onNavigate={onNavigate} user={user}>
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Bienvenue, {user?.name ?? "Utilisateur"}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Bienvenue, </h1>
           <p className="mt-1 text-sm text-muted-foreground">Aperçu de vos Capex et demandes d'achat.</p>
         </div>
       </header>

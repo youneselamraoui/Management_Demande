@@ -3,7 +3,7 @@ import DemandesPage from "./views/DemandesPage";
 import SuiviCapex from "./views/SuiviCapex";
 import Dashboard from "./views/Dashboard";
 
-const CURRENT_USER = { name: " A.", role: "Fin" }; // à remplacer par ton auth réelle
+const CURRENT_USER = { name: "ECI", role: "" }; // à remplacer par ton auth réelle
 
 const PAGES = {
   dashboard: Dashboard,

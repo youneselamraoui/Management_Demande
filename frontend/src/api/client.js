@@ -60,6 +60,8 @@ export const getDemandes = () => request("/demandes");
 export const getDetailsDemande = (id) => request(`/detaildemandes/demande/${id}`);
 export const createDemande = (data) =>
   request("/demandes", { method: "POST", body: JSON.stringify(data) });
+export const validerDemande = (id) => request(`/demandes/${id}/valider`, { method: "PUT" });
+export const refuserDemande = (id) => request(`/demandes/${id}/refuser`, { method: "PUT" });
 export const getUtilisateurs = () => request("/utilisateurs");
 export const getCapex = () => request("/capex");
 export const getConsommationCapex = (capexId) =>

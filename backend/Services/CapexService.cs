@@ -35,7 +35,7 @@ public class CapexService : ICapexService
     {
         var consomme = await _context.DetailDemandes
             .AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.Acceptee)
+            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
             .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
         return budgetTotal - consomme;
     }
@@ -46,7 +46,7 @@ public class CapexService : ICapexService
         foreach (var c in capexes)
         {
             var consomme = await _context.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == StatutDemande.Acceptee)
+                .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
                 .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }
@@ -79,7 +79,7 @@ public class CapexService : ICapexService
 
         var parDepartement = await _context.DetailDemandes
             .AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.Acceptee)
+            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
             .GroupBy(dd => dd.Demande.Utilisateur.Departement.Nom)
             .Select(g => new ConsommationDepartementDto
             {
@@ -89,9 +89,18 @@ public class CapexService : ICapexService
             .OrderByDescending(x => x.MontantConsomme)
             .ToListAsync();
 
+        var statutsEnAttente = new[]
+        {
+            StatutDemande.EnAttenteValidationAchat1,
+            StatutDemande.EnAttenteValidationAchat2,
+            StatutDemande.EnAttenteValidationChef,
+            StatutDemande.EnAttenteValidationFinance,
+            StatutDemande.EnAttenteValidationDirecteur
+        };
+
         var montantEnAttente = await _context.DetailDemandes
             .AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.EnAttente)
+            .Where(dd => dd.Demande.CapexId == capexId && statutsEnAttente.Contains(dd.Demande.Statut))
             .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
 
         var resteCalcule = await CalculateResteBudgetAsync(capexId, entity.BudgetTotal);

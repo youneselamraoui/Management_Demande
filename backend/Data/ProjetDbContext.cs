@@ -25,6 +25,8 @@ public partial class ProjetDbContext : DbContext
     public virtual DbSet<DetailDemande> DetailDemandes { get; set; }
 
     public virtual DbSet<Utilisateur> Utilisateurs { get; set; }
+    public virtual DbSet<Fournisseur> Fournisseurs {get;set;}
+    public virtual DbSet<BonCommande> BonCommandes {get;set;}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

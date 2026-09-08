@@ -24,6 +24,7 @@ obj/
 publish/
 *.dll
 *.exe
+capex.db
 
 ### IDE ###
 .vscode/

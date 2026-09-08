@@ -13,7 +13,7 @@ import logo from "../assets/img/ECI_logo1.png";
 // ajuste le chemin relatif selon où se trouve réellement AppShell.jsx par rapport à src/assets
 const MENU_ITEMS = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { key: "demandes", label: "Demandes d'achat", icon: ClipboardList },
+  { key: "demandes", label: "Suivi demandes d'achat", icon: ClipboardList },
   { key: "suivi", label: "Suivi Capex", icon: BarChart3 },
 ];
 const ACCOUNT_ITEMS = [
