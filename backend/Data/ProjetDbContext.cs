@@ -25,19 +25,23 @@ public partial class ProjetDbContext : DbContext
     public virtual DbSet<DetailDemande> DetailDemandes { get; set; }
 
     public virtual DbSet<Utilisateur> Utilisateurs { get; set; }
+    public virtual DbSet<Fournisseur> Fournisseurs {get;set;}
+    public virtual DbSet<BonCommande> BonCommandes {get;set;}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Capex>(entity =>
         {
             entity.HasKey(e => e.CapexId).HasName("PK__Capex__120BD429C6355FB6");
+            entity.ToTable("Capexes");
         });
 
         modelBuilder.Entity<Demande>(entity =>
         {
-            entity.HasKey(e => e.IdDemande).HasName("PK__Demande__8CE9A8CAB33538E6");
+            entity.HasKey(e => e.Id).HasName("PK__Demande__8CE9A8CAB33538E6");
+            entity.ToTable("Demandes");
 
-            entity.Property(e => e.CreateAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).IsRequired();
 
             entity.Property(e => e.Statut)
                 .HasConversion<string>()
@@ -60,7 +64,7 @@ public partial class ProjetDbContext : DbContext
         modelBuilder.Entity<DetailDemande>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__DetailDe__3214EC07CD94415F");
-
+            entity.ToTable("DetailsDemandes");
             entity.HasOne(d => d.Demande).WithMany(p => p.DetailDemandes)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_DetailDemande_Demande");
@@ -69,7 +73,7 @@ public partial class ProjetDbContext : DbContext
         modelBuilder.Entity<Utilisateur>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Utilisat__3214EC075DBA5179");
-
+            entity.ToTable("Utilisateurs");
             entity.HasOne(d => d.Departement).WithMany(p => p.Utilisateurs)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Utilisateur_Departement");

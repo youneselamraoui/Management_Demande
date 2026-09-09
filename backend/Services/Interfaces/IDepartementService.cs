@@ -5,7 +5,7 @@ namespace backend.Services.Interfaces;
 
 public interface IDepartementService
 {
-    Task<Departement?> GetDepartementAsync(int id);
-    Task<List<Departement>> GetAllDepartementsAsync();
-    Task<Departement> CreateDepartementAsync(DTOs.CreateDepartementDto dto);
+    Task<Departements?> GetDepartementAsync(int id);
+    Task<List<Departements>> GetAllDepartementsAsync();
+    Task<Departements> CreateDepartementAsync(DTOs.CreateDepartementDto dto);
 }

@@ -5,7 +5,7 @@ namespace backend.Services.Interfaces;
 
 public interface IUtilisateurService
 {
-    Task<Utilisateur?> GetUtilisateurAsync(int id);
-    Task<List<Utilisateur>> GetAllUtilisateursAsync();
-    Task<Utilisateur> CreateUtilisateurAsync(DTOs.CreateUtilisateurDto dto);
+    Task<Utilisateurs?> GetUtilisateurAsync(int id);
+    Task<List<Utilisateurs>> GetAllUtilisateursAsync();
+    Task<Utilisateurs> CreateUtilisateurAsync(DTOs.CreateUtilisateurDto dto);
 }

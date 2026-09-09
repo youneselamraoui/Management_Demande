@@ -36,21 +36,54 @@ export function StatCard({ label, value, icon, trend, footnote }) {
 
 const STATUT_STYLES = {
   EnAttente: "bg-warning-soft text-warning",
+  ValidationAchat1: "bg-warning-soft text-warning",
+  ValidationAchat2: "bg-warning-soft text-warning",
+  ValidationChef: "bg-warning-soft text-warning",
+  ValidationFinance: "bg-warning-soft text-warning",
+  ValidationDirecteur: "bg-warning-soft text-warning",
+  EnAttenteValidationAchat1: "bg-warning-soft text-warning",
+  EnAttenteValidationAchat2: "bg-warning-soft text-warning",
+  EnAttenteValidationChef: "bg-warning-soft text-warning",
+  EnAttenteValidationFinance: "bg-warning-soft text-warning",
+  EnAttenteValidationDirecteur: "bg-warning-soft text-warning",
+  BonDeCommande: "bg-success-soft text-success",
   Acceptee: "bg-success-soft text-success",
   Rejetee: "bg-danger-soft text-destructive",
+  RefuseeAchat1: "bg-danger-soft text-destructive",
+  RefuseeAchat2: "bg-danger-soft text-destructive",
+  RefuseeChef: "bg-danger-soft text-destructive",
+  RefuseeFinance: "bg-danger-soft text-destructive",
+  RefuseeDirecteur: "bg-danger-soft text-destructive",
 };
 const STATUT_LABELS = {
   EnAttente: "En attente",
-  Acceptee: "Approuvée",
+  ValidationAchat1: "En attente validation achat1",
+  ValidationAchat2: "En attente validation achat2",
+  ValidationChef: "En attente validation chef",
+  ValidationFinance: "En attente validation finance",
+  ValidationDirecteur: "En attente validation directeur",
+  EnAttenteValidationAchat1: "En attente validation achat1",
+  EnAttenteValidationAchat2: "En attente validation achat2",
+  EnAttenteValidationChef: "En attente validation chef",
+  EnAttenteValidationFinance: "En attente validation finance",
+  EnAttenteValidationDirecteur: "En attente validation directeur",
+  BonDeCommande: "Bon commande",
+  Acceptee: "Bon commande",
   Rejetee: "Rejetée",
+  RefuseeAchat1: "Refusée achat1",
+  RefuseeAchat2: "Refusée achat2",
+  RefuseeChef: "Refusée chef",
+  RefuseeFinance: "Refusée finance",
+  RefuseeDirecteur: "Refusée directeur",
 };
 
 export function StatutBadge({ statut }) {
   return (
     <span
-      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
+      className={`inline-flex max-w-full items-center justify-center truncate rounded-full px-2 py-1 text-center text-[11px] font-semibold leading-none ${
         STATUT_STYLES[statut] ?? "bg-muted text-muted-foreground"
       }`}
+      title={STATUT_LABELS[statut] ?? statut}
     >
       {STATUT_LABELS[statut] ?? statut}
     </span>

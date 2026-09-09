@@ -7,12 +7,16 @@ using backend.Models;
 
 namespace backend.Data.EfModels;
 
-[Table("Demande")]
+[Table("Demandes")]
 public partial class Demande
 {
     [Key]
-    [Column("idDemande")]
-    public int IdDemande { get; set; }
+    [Column("Id")]
+    public int Id { get; set; }
+
+    // Compat : ancien PK idDemande -> proxy vers Id
+    [NotMapped]
+    public int IdDemande { get => Id; set => Id = value; }
 
     public int UtilisateurId { get; set; }
 
@@ -20,15 +24,31 @@ public partial class Demande
     public StatutDemande Statut { get; set; }
     public int CapexId { get; set; }
 
-    [Column("RFx")]
+    [Column("RFX")]
     [StringLength(50)]
-    public string? Rfx { get; set; }
+    public string? RFX { get; set; }
 
-    public DateTime CreateAt { get; set; }
+    // Compat RFx
+    [NotMapped]
+    public string? Rfx { get => RFX; set => RFX = value; }
 
-    public DateTime? DateValidation1 { get; set; }
+    [Column("CreatedAt")]
+    public DateTime CreatedAt { get; set; }
 
-    public DateTime? DateValidation2 { get; set; }
+    [NotMapped]
+    public DateTime CreateAt { get => CreatedAt; set => CreatedAt = value; }
+
+    [Column("DateValidationAchat1")]
+    public DateTime? DateValidationAchat1 { get; set; }
+
+    [NotMapped]
+    public DateTime? DateValidation1 { get => DateValidationAchat1; set => DateValidationAchat1 = value; }
+
+    [Column("DateValidationAchat2")]
+    public DateTime? DateValidationAchat2 { get; set; }
+
+    [NotMapped]
+    public DateTime? DateValidation2 { get => DateValidationAchat2; set => DateValidationAchat2 = value; }
 
     public DateTime? DateValidateChef { get; set; }
 

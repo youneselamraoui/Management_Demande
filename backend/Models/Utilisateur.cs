@@ -1,7 +1,7 @@
 // Models/Utilisateur.cs
 namespace backend.Models;
 
-public class Utilisateur
+public class Utilisateurs
 {
     public int Id { get; set; }
     public string Nom { get; set; } = string.Empty;

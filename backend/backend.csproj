@@ -5,6 +5,15 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>ea0eef0a-bf1b-4b7f-a09f-084caa5117c6</UserSecretsId>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+    <AssemblyName>CapexManager</AssemblyName>
+    <Product>Capex Manager</Product>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

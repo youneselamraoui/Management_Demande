@@ -11,7 +11,7 @@ public class UtilisateurService : IUtilisateurService
     private readonly backend.Data.EfModels.ProjetDbContext _context;
     public UtilisateurService(backend.Data.EfModels.ProjetDbContext context) => _context = context;
 
-    public async Task<Utilisateur?> GetUtilisateurAsync(int id)
+    public async Task<Utilisateurs?> GetUtilisateurAsync(int id)
     {
         var entity = await _context.Utilisateurs
             .Include(u => u.Departement)
@@ -21,7 +21,7 @@ public class UtilisateurService : IUtilisateurService
         return entity is null ? null : MapToModel(entity);
     }
 
-    public async Task<List<Utilisateur>> GetAllUtilisateursAsync()
+    public async Task<List<Utilisateurs>> GetAllUtilisateursAsync()
     {
         var entities = await _context.Utilisateurs
             .Include(u => u.Departement)
@@ -31,7 +31,7 @@ public class UtilisateurService : IUtilisateurService
         return entities.Select(MapToModel).ToList();
     }
 
-    public async Task<Utilisateur> CreateUtilisateurAsync(CreateUtilisateurDto dto)
+    public async Task<Utilisateurs> CreateUtilisateurAsync(CreateUtilisateurDto dto)
     {
         // Règle métier : vérifier que le département existe avant d'insérer
         var departement = await _context.Departements
@@ -50,7 +50,7 @@ public class UtilisateurService : IUtilisateurService
         _context.Utilisateurs.Add(entity);
         await _context.SaveChangesAsync();
 
-        return new Utilisateur
+        return new Utilisateurs
         {
             Id = entity.Id,
             Nom = entity.Nom,
@@ -59,7 +59,7 @@ public class UtilisateurService : IUtilisateurService
         };
     }
 
-    private static Utilisateur MapToModel(EfUtilisateur entity) => new()
+    private static Utilisateurs MapToModel(EfUtilisateur entity) => new()
     {
         Id = entity.Id,
         Nom = entity.Nom,

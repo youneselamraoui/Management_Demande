@@ -1,7 +1,7 @@
 // Models/Departement.cs
 namespace backend.Models;
 
-public class Departement
+public class Departements
 {
     public int Id { get; set; }
     public string Nom { get; set; } = string.Empty;

@@ -1,27 +1,64 @@
-import { useEffect, useState } from "react";
-import { Layers, Download, CreditCard, Monitor, Truck, Wallet, Filter, TrendingUp, Info } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Layers, Download, CreditCard, Monitor, Truck, Wallet, Filter, TrendingUp, Info, ShieldCheck, AlertTriangle } from "lucide-react";
+import { exportSvgAsPng } from "../utils/exportGraphe";
 import AppShell from "../components/AppShell";
 import { ProgressBar, StatCard } from "../components/ui/Primitives";
 import { getCapex, getConsommationCapex } from "../api/client";
 
-const DEPT_ICONS = [Monitor, Truck, CreditCard, Layers];
-const DEPT_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)"];
+const DEPT_CONFIG = {
+  finance: { icon: CreditCard, color: "var(--color-chart-1)" },
+  it: { icon: Monitor, color: "var(--color-chart-2)" },
+  logistique: { icon: Truck, color: "#F59E0B" },
+  qualite: { icon: ShieldCheck, color: "#10B981" },
+  qualité: { icon: ShieldCheck, color: "#10B981" },
+};
+const FALLBACK_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "#8B5CF6", "#EC4899"];
+const FALLBACK_ICONS = [Monitor, Truck, CreditCard, Layers, ShieldCheck];
 
-export default function SuiviCapex({ onNavigate, user }) {
+function getDeptConfig(name, index = 0) {
+  if (!name) return { icon: Layers, color: FALLBACK_COLORS[index % FALLBACK_COLORS.length] };
+  const key = String(name).toLowerCase().trim();
+  if (DEPT_CONFIG[key]) return DEPT_CONFIG[key];
+  return { icon: FALLBACK_ICONS[index % FALLBACK_ICONS.length], color: FALLBACK_COLORS[index % FALLBACK_COLORS.length] };
+}
+
+export default function SuiviCapex({ onNavigate, params, user }) {
   const [capexList, setCapexList] = useState([]);
   const [selectedCapexId, setSelectedCapexId] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const svgRef = useRef(null);
+
+  function resolveCapexId(list, p) {
+    if (!list.length) return "";
+    if (p?.capexId != null && p.capexId !== "") {
+      const byId = list.find((c) => String(c.capexId) === String(p.capexId));
+      if (byId) return byId.capexId;
+    }
+    if (p?.capexNom) {
+      const byNom = list.find((c) => String(c.nomCapex).toLowerCase() === String(p.capexNom).toLowerCase());
+      if (byNom) return byNom.capexId;
+    }
+    return list[0].capexId;
+  }
 
   useEffect(() => {
     getCapex()
       .then((list) => {
         setCapexList(list);
-        if (list.length > 0) setSelectedCapexId(list[0].capexId);
+        if (list.length > 0) setSelectedCapexId(resolveCapexId(list, params));
       })
       .catch((e) => setError(e.message));
   }, []);
+
+  useEffect(() => {
+    if (!capexList.length || !params) return;
+    const resolved = resolveCapexId(capexList, params);
+    if (resolved && String(resolved) !== String(selectedCapexId)) {
+      setSelectedCapexId(resolved);
+    }
+  }, [params?.capexId, params?.capexNom]);
 
   useEffect(() => {
     if (!selectedCapexId) return;
@@ -53,17 +90,18 @@ export default function SuiviCapex({ onNavigate, user }) {
   const pctConsomme = data.budgetTotal > 0 ? (consomme / data.budgetTotal) * 100 : 0;
   const previsionnel = consomme + data.montantEnAttente;
 
-  const highlighted = data.parDepartement.slice(0, 2);
+  const highlighted = data ? data.parDepartement.slice(0, 2) : [];
 
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
   let cumulative = 0;
-  const slices = data.parDepartement.map((d, i) => {
+  const slices = data ? data.parDepartement.map((d, i) => {
     const pct = data.budgetTotal > 0 ? d.montantConsomme / data.budgetTotal : 0;
-    const slice = { ...d, pct, offset: cumulative, color: DEPT_COLORS[i % DEPT_COLORS.length] };
+    const { color } = getDeptConfig(d.departementNom, i);
+    const slice = { ...d, pct, offset: cumulative, color };
     cumulative += pct;
     return slice;
-  });
+  }) : [];
 
   return (
     <AppShell
@@ -92,11 +130,36 @@ export default function SuiviCapex({ onNavigate, user }) {
               ))}
             </select>
           </div>
-          <button className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted">
-            <Download className="size-4" /> Exporter
+          <button
+            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted"
+            onClick={() => {
+              const name = `${data.nomCapex || "Capex"}_Repartition_${pctConsomme.toFixed(0)}pct`;
+              const legend = slices.map((s) => ({
+                label: s.departementNom,
+                color: s.color,
+                pct: `${((s.pct * 100).toFixed(0))}%`,
+              }));
+              if (resteBudgetReel > 0) legend.push({ label: "Reste budget", color: "#e2e8f0", pct: `${(100 - pctConsomme).toFixed(0)}%`, dashed: true });
+              exportSvgAsPng(svgRef.current, name, 2, legend).catch((e) => alert("Export échoué: " + e.message));
+            }}
+            title="Exporter le graphe en PNG avec légende"
+          >
+            <Download className="size-4" /> Exporter PNG
           </button>
         </div>
       </header>
+
+      {(data.resteBudgetIncoherent || data.ResteBudgetIncoherent) && (
+        <div className="mt-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-semibold">Incohérence ResteBudget détectée</p>
+            <p className="mt-1 text-amber-800">
+              Valeur stockée en base: {(data.budgetRestantStocke ?? data.BudgetRestantStocke)?.toLocaleString("fr-FR")} $ — Valeur calculée: {(data.budgetRestantCalcule ?? data.BudgetRestantCalcule)?.toLocaleString("fr-FR")} $ (BudgetTotal - consommé). Écart: {((data.budgetRestantStocke ?? data.BudgetRestantStocke) - (data.budgetRestantCalcule ?? data.BudgetRestantCalcule))?.toLocaleString("fr-FR")} $. Modif directe SSMS détectée.
+            </p>
+          </div>
+        </div>
+      )}
 
       <section
         className="mt-6 grid gap-4"
@@ -104,7 +167,7 @@ export default function SuiviCapex({ onNavigate, user }) {
       >
         <StatCard label="Budget Total" value={`${data.budgetTotal.toLocaleString("fr-FR")} $`} icon={<CreditCard className="size-4" />} />
         {highlighted.map((d, i) => {
-          const Icon = DEPT_ICONS[i % DEPT_ICONS.length];
+          const { icon: Icon } = getDeptConfig(d.departementNom, i);
           return (
             <StatCard
               key={d.departementNom}
@@ -131,7 +194,7 @@ export default function SuiviCapex({ onNavigate, user }) {
           </div>
 
           <div className="my-5 flex justify-center">
-            <svg width="220" height="220" viewBox="0 0 220 220">
+            <svg ref={svgRef} width="220" height="220" viewBox="0 0 220 220">
               <circle cx="110" cy="110" r={radius} fill="none" stroke="var(--color-muted)" strokeWidth="28" />
               {slices.map((s) => (
                 <circle
@@ -152,6 +215,20 @@ export default function SuiviCapex({ onNavigate, user }) {
                 $ Utilisé
               </text>
             </svg>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3">
+            {slices.map((s) => (
+              <span key={`legend-${s.departementNom}`} className="flex items-center gap-1.5 text-xs font-medium">
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+                {s.departementNom}
+              </span>
+            ))}
+            {resteBudgetReel > 0 && (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <span className="size-2.5 shrink-0 rounded-full bg-muted" style={{ border: "1px solid var(--color-border)" }} />
+                Reste
+              </span>
+            )}
           </div>
 
           <div className="flex gap-3 rounded-xl bg-accent p-4 text-sm text-accent-foreground">
@@ -175,14 +252,20 @@ export default function SuiviCapex({ onNavigate, user }) {
 
           <div className="mt-3">
             {data.parDepartement.map((d, i) => {
-              const Icon = DEPT_ICONS[i % DEPT_ICONS.length];
+              const { icon: Icon, color } = getDeptConfig(d.departementNom, i);
               const pct = data.budgetTotal > 0 ? (d.montantConsomme / data.budgetTotal) * 100 : 0;
               return (
                 <div key={d.departementNom} className="flex items-center gap-3 border-b border-border py-3">
-                  <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                  <div className="grid size-9 shrink-0 place-items-center rounded-lg text-white" style={{ backgroundColor: color }}>
                     <Icon className="size-4" />
                   </div>
-                  <div className="flex-1 text-sm font-semibold">{d.departementNom}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      {d.departementNom}
+                      <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
+                    </div>
+                    <div className="text-xs text-muted-foreground">{pct.toFixed(0)}% du budget</div>
+                  </div>
                   <div className="text-right">
                     <div className="font-semibold">{d.montantConsomme.toLocaleString("fr-FR")} $</div>
                     <span className="mt-0.5 inline-block rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
@@ -230,7 +313,7 @@ export default function SuiviCapex({ onNavigate, user }) {
 
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            onClick={() => onNavigate("demandes")}
+            onClick={() => onNavigate("demandes", { capex: data.nomCapex })}
           >
             Voir toutes les demandes →
           </button>

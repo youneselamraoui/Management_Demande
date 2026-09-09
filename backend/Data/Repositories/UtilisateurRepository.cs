@@ -17,7 +17,7 @@ public class UtilisateurRepository : IUtilisateurRepository
         FROM Utilisateur u
         INNER JOIN Departement d ON u.DepartementID = d.Id";
 
-    public async Task<Utilisateur?> GetByIdAsync(int id)
+    public async Task<Utilisateurs?> GetByIdAsync(int id)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -32,9 +32,9 @@ public class UtilisateurRepository : IUtilisateurRepository
         return null;
     }
 
-    public async Task<List<Utilisateur>> GetAllAsync()
+    public async Task<List<Utilisateurs>> GetAllAsync()
     {
-        var utilisateurs = new List<Utilisateur>();
+        var utilisateurs = new List<Utilisateurs>();
 
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -48,7 +48,7 @@ public class UtilisateurRepository : IUtilisateurRepository
         return utilisateurs;
     }
 
-    public async Task<int> AddAsync(Utilisateur utilisateur)
+    public async Task<int> AddAsync(Utilisateurs utilisateur)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -62,7 +62,7 @@ public class UtilisateurRepository : IUtilisateurRepository
         return (int)(await command.ExecuteScalarAsync())!;
     }
 
-    private static Utilisateur MapToUtilisateur(SqlDataReader reader) => new()
+    private static Utilisateurs MapToUtilisateur(SqlDataReader reader) => new()
     {
         Id = reader.GetInt32(reader.GetOrdinal("Id")),
         Nom = reader.GetString(reader.GetOrdinal("Nom")),

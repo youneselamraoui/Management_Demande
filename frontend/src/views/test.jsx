@@ -1,27 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/AppShell";
-import { Search, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, MoreHorizontal, Pencil, Check, X, Building2, Maximize2, Minimize2, CreditCard, Monitor, Truck, ShieldCheck, Layers, Download } from "lucide-react";
+import { Search, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, MoreHorizontal, Pencil, Check, X } from "lucide-react";
 import { StatutBadge, Avatar, StatCard } from "../components/ui/Primitives";
 import CreateDemandeModal from "../components/CreateDemandeModal";
 import { getDemandes, getDetailsDemande, refuserDemande, validerDemande } from "../api/client";
-import { createPortal } from "react-dom";
-import { exportToExcel, formatDateExcel } from "../utils/exportExcel";
 
-
-const PAGE_SIZE = 10;
-
-const DEPT_CONFIG = {
-  finance: { icon: CreditCard, color: "var(--color-chart-1)" },
-  it: { icon: Monitor, color: "var(--color-chart-2)" },
-  logistique: { icon: Truck, color: "#F59E0B" },
-  qualite: { icon: ShieldCheck, color: "#10B981" },
-  qualité: { icon: ShieldCheck, color: "#10B981" },
-};
-function getDeptConfig(name) {
-  if (!name) return { icon: Building2, color: "var(--color-muted-foreground)" };
-  const k = String(name).toLowerCase().trim();
-  return DEPT_CONFIG[k] ?? { icon: Building2, color: "var(--color-muted-foreground)" };
-}
+const PAGE_SIZE = 5;
 const STATUTS = [
   "EnAttenteValidationAchat1",
   "EnAttenteValidationAchat2",
@@ -52,7 +36,6 @@ const STATUT_LABELS = {
 const DEFAULT_FILTERS = {
   demandeur: "Tous",
   capex: "Tous",
-  departement: "Tous",
   statut: "Tous",
   rfx: "Tous",
   createAt: "Tous",
@@ -103,7 +86,7 @@ function dateOptions(list, getRaw) {
   return options;
 }
 
-export default function DemandesPage({ onNavigate, params, user }) {
+export default function DemandesPage({ onNavigate, user }) {
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -113,21 +96,7 @@ export default function DemandesPage({ onNavigate, params, user }) {
   const [showModal, setShowModal] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [detailsCache, setDetailsCache] = useState({});
-  const [tableExpanded, setTableExpanded] = useState(false);
-  const [showExport, setShowExport] = useState(false);
-  const [includeDetails, setIncludeDetails] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [filters, setFilters] = useState(() => ({
-    ...DEFAULT_FILTERS,
-    ...(params?.capex ? { capex: params.capex } : {}),
-  }));
-
-  useEffect(() => {
-    if (params?.capex && params.capex !== filters.capex) {
-      setFilters((prev) => ({ ...prev, capex: params.capex }));
-      setPage(1);
-    }
-  }, [params?.capex]);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   useEffect(() => { load(); }, []);
 
@@ -182,7 +151,6 @@ export default function DemandesPage({ onNavigate, params, user }) {
   // Options disponibles pour chaque filtre de colonne, dérivées des demandes chargées
   const demandeurOptions = textOptions(demandes, (d) => d.utilisateurNom);
   const capexOptions = textOptions(demandes, (d) => d.capexNom);
-  const departementOptions = textOptions(demandes, (d) => d.departementNom || d.DepartementNom);
   const rfxOptions = textOptions(demandes, (d) => d.rFx || d.RFX);
   const statutOptions = STATUTS.map((s) => ({ value: s, label: STATUT_LABELS[s] }));
   const createAtOptions = dateOptions(demandes, (d) => d.createAt);
@@ -201,7 +169,6 @@ export default function DemandesPage({ onNavigate, params, user }) {
     })
     .filter((d) => filters.demandeur === "Tous" || d.utilisateurNom === filters.demandeur)
     .filter((d) => filters.capex === "Tous" || d.capexNom === filters.capex)
-    .filter((d) => filters.departement === "Tous" || (d.departementNom || d.DepartementNom) === filters.departement)
     .filter((d) => filters.rfx === "Tous" || (d.rFx || d.RFX) === filters.rfx)
     .filter((d) => filters.createAt === "Tous" || formatDate(d.createAt) === filters.createAt)
     .filter((d) => filters.achat1 === "Tous" || formatDate(d.dateValidationAchat1) === filters.achat1)
@@ -216,7 +183,6 @@ export default function DemandesPage({ onNavigate, params, user }) {
         String(d.idDemande).includes(q) ||
         (d.utilisateurNom || "").toLowerCase().includes(q) ||
         (d.capexNom || "").toLowerCase().includes(q) ||
-        (d.departementNom || d.DepartementNom || "").toLowerCase().includes(q) ||
         (d.statut || "").toLowerCase().includes(q) ||
         (d.rFx || d.RFX || "").toLowerCase().includes(q) ||
         formatDate(d.createAt).includes(q) ||
@@ -242,80 +208,6 @@ export default function DemandesPage({ onNavigate, params, user }) {
     }).length,
   };
 
-  async function handleExport() {
-    if (!filtered.length) return;
-    setExporting(true);
-    try {
-      const rows = filtered.map((d) => ({
-        N: d.idDemande,
-        Demandeur: d.utilisateurNom,
-        Capex: d.capexNom,
-        Departement: d.departementNom || d.DepartementNom || "",
-        Statut: d.statut,
-        RFx: d.rFx || d.RFX || "",
-        CreeLe: formatDateExcel(d.createAt),
-        Achat1: formatDateExcel(d.dateValidationAchat1),
-        Achat2: formatDateExcel(d.dateValidationAchat2),
-        Chef: formatDateExcel(d.dateValidateChef),
-        Finance: formatDateExcel(d.dateValidateFinance),
-        Directeur: formatDateExcel(d.dateValidateDirecteur),
-      }));
-      const columns = [
-        { header: "N°", key: "N" },
-        { header: "Demandeur", key: "Demandeur" },
-        { header: "Capex", key: "Capex" },
-        { header: "Département", key: "Departement" },
-        { header: "Statut", key: "Statut" },
-        { header: "RFx", key: "RFx" },
-        { header: "Créée le", key: "CreeLe" },
-        { header: "Achat1", key: "Achat1" },
-        { header: "Achat2", key: "Achat2" },
-        { header: "Chef", key: "Chef" },
-        { header: "Finance", key: "Finance" },
-        { header: "Directeur", key: "Directeur" },
-      ];
-      const sheets = [{ name: "Demandes", rows, columns }];
-      if (includeDetails) {
-        const allDetails = [];
-        for (const d of filtered) {
-          let det = detailsCache[d.idDemande];
-          if (det === undefined) {
-            try { det = await getDetailsDemande(d.idDemande); setDetailsCache((p) => ({ ...p, [d.idDemande]: det })); } catch { det = []; }
-          }
-          if (Array.isArray(det) && det.length) {
-            det.forEach((line) => allDetails.push({
-              Demande: d.idDemande,
-              Article: line.article,
-              Quantite: line.quantite,
-              PrixUnitaire: line.prix,
-              SousTotal: line.quantite * line.prix,
-              Devis: line.devis || "",
-            }));
-          } else if (Array.isArray(det) && !det.length) {
-            allDetails.push({ Demande: d.idDemande, Article: "Aucun article", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" });
-          }
-        }
-        sheets.push({
-          name: "Details",
-          rows: allDetails.length ? allDetails : [{ Demande: "", Article: "Aucun article trouvé", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" }],
-          columns: [
-            { header: "Demande", key: "Demande" },
-            { header: "Article", key: "Article" },
-            { header: "Quantité", key: "Quantite" },
-            { header: "Prix unitaire", key: "PrixUnitaire" },
-            { header: "Sous-total", key: "SousTotal" },
-            { header: "Devis", key: "Devis" },
-          ],
-        });
-      }
-      exportToExcel({ filename: `Demandes_${new Date().toISOString().slice(0,10)}`, sheets });
-      setShowExport(false);
-    } catch (e) {
-      console.error("Export error", e);
-      alert("Erreur export: " + e.message);
-    } finally { setExporting(false); }
-  }
-
   return (
     <AppShell active="demandes" onNavigate={onNavigate} user={user}>
       <div className="rounded-2xl border border-border p-6">
@@ -326,22 +218,6 @@ export default function DemandesPage({ onNavigate, params, user }) {
               Gérez et suivez l'état de vos demandes d'investissement (Capex).
             </p>
           </div>
-          {/*
-          <div className="flex items-center gap-2">
-            <button className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted" title="Plus d'options">
-              <MoreHorizontal className="size-4" />
-            </button>
-            <button className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted" title="Modifier">
-              <Pencil className="size-4" />
-            </button>
-            <button
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-              onClick={() => setShowModal(true)}
-            >
-              <Plus className="size-4" /> Nouvelle demande
-            </button>
-          </div>
-          */}
         </div>
 
         <div className="mt-5 flex items-center gap-3">
@@ -360,10 +236,10 @@ export default function DemandesPage({ onNavigate, params, user }) {
             <button
               onClick={resetFilters}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm font-medium hover:bg-muted/70"
-              title="Réinitialiser tous les filtres"
+              title="Réinitialiser les filtres"
             >
+              {activeFiltersCount} filtre{activeFiltersCount > 1 ? "s" : ""}
               <X className="size-3.5" />
-              Réinitialiser ({activeFiltersCount})
             </button>
           )}
 
@@ -374,71 +250,20 @@ export default function DemandesPage({ onNavigate, params, user }) {
           >
             <ArrowUpDown className="size-4" />
           </button>
-          <button
-            className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted"
-            onClick={() => setTableExpanded((v) => !v)}
-            title={tableExpanded ? "Réduire le tableau" : "Agrandir le tableau"}
-          >
-            {tableExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-          </button>
-          <button
-            className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50"
-            onClick={() => setShowExport(true)}
-            disabled={!filtered.length}
-            title="Exporter en Excel"
-          >
-            <Download className="size-4" /> Exporter
-          </button>
         </div>
       </div>
-
-      {showExport && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onClick={() => setShowExport(false)}>
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold">Exporter en Excel</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Exporte {filtered.length} demande(s) filtrée(s) — compatible Excel.</p>
-            <label className="mt-4 flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={includeDetails} onChange={(e) => setIncludeDetails(e.target.checked)} className="size-4 rounded border-border" />
-              Inclure les détails (Article, Quantité, Prix, Sous-total, Devis)
-            </label>
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowExport(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted">Annuler</button>
-              <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                {exporting ? "Export..." : <><Download className="size-4" /> Exporter</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {loading && <p className="mt-6 text-sm text-muted-foreground">Chargement...</p>}
       {error && <p className="mt-6 text-sm text-destructive">{error}</p>}
 
       {!loading && !error && (
-        <div className={`mt-6 overflow-hidden rounded-2xl border border-border ${tableExpanded ? "ring-1 ring-border" : ""}`}>
-          <div className={tableExpanded ? "overflow-x-auto" : "overflow-hidden"}>
-            <table className={tableExpanded ? "w-full min-w-[1350px] text-sm" : "w-full table-fixed text-[13px]"}>
-              {!tableExpanded && (
-                <colgroup>
-                  <col style={{ width: "32px" }} />
-                  <col style={{ width: "52px" }} />
-                  <col style={{ width: "15%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "15%" }} />
-                  <col style={{ width: "6%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "7%" }} />
-                </colgroup>
-              )}
+        <div className="mt-6 rounded-2xl border border-border">
+          <div className="overflow-x-auto rounded-2xl">
+            <table className="w-full min-w-[1200px] text-sm">
               <thead>
-                <tr className={`bg-muted text-left text-muted-foreground ${tableExpanded ? "text-xs" : "text-[11px]"}`}>
-                  <th className={tableExpanded ? "w-10 px-4 py-3" : "px-1 py-3"} />
-                  <th className={tableExpanded ? "px-4 py-3 font-medium" : "px-2 py-3 font-medium"}>N°</th>
+                <tr className="bg-muted text-left text-xs text-muted-foreground [&>th:first-child]:rounded-tl-2xl [&>th:last-child]:rounded-tr-2xl">
+                  <th className="w-10 px-4 py-3" />
+                  <th className="px-4 py-3 font-medium">N°</th>
                   <ColumnFilterHeader
                     label="Demandeur"
                     options={demandeurOptions}
@@ -452,17 +277,11 @@ export default function DemandesPage({ onNavigate, params, user }) {
                     onChange={(v) => updateFilter("capex", v)}
                   />
                   <ColumnFilterHeader
-                    label="Département"
-                    options={departementOptions}
-                    selected={filters.departement}
-                    onChange={(v) => updateFilter("departement", v)}
-                  />
-                  <ColumnFilterHeader
                     label="Statut"
                     options={statutOptions}
                     selected={filters.statut}
                     onChange={(v) => updateFilter("statut", v)}
-                    className="min-w-0"
+                    className="min-w-[190px]"
                   />
                   <ColumnFilterHeader
                     label="RFx"
@@ -514,7 +333,7 @@ export default function DemandesPage({ onNavigate, params, user }) {
               <tbody>
                 {pageItems.length === 0 ? (
                   <tr>
-                    <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={12} className="px-4 py-8 text-center text-muted-foreground">
                       Aucune demande trouvée.
                     </td>
                   </tr>
@@ -528,8 +347,6 @@ export default function DemandesPage({ onNavigate, params, user }) {
                       details={detailsCache[d.idDemande]}
                       onValider={() => traiterDemande(d.idDemande, "valider")}
                       onRefuser={() => traiterDemande(d.idDemande, "refuser")}
-                      onNavigate={onNavigate}
-                      expandedTable={tableExpanded}
                     />
                   ))
                 )}
@@ -537,7 +354,7 @@ export default function DemandesPage({ onNavigate, params, user }) {
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-border px-4 py-3.5 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between rounded-b-2xl border-t border-border px-4 py-3.5 text-xs text-muted-foreground">
             <span>
               Affichage de {pageItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} à{" "}
               {(page - 1) * PAGE_SIZE + pageItems.length} sur {filtered.length} demandes
@@ -579,64 +396,21 @@ export default function DemandesPage({ onNavigate, params, user }) {
 
 // En-tête de colonne avec filtre déroulant + recherche, réutilisable pour
 // n'importe quelle colonne (texte, statut, ou date déjà formatée en libellé).
-
-// En-tête de colonne avec filtre déroulant + recherche, réutilisable pour
-// n'importe quelle colonne (texte, statut, ou date déjà formatée en libellé).
 function ColumnFilterHeader({ label, options, selected, onChange, align = "left", className = "" }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const btnRef = useRef(null);
-  const menuRef = useRef(null);
-
-  function openMenu() {
-    if (btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 4,
-        left: align === "right" ? undefined : rect.left,
-        right: align === "right" ? window.innerWidth - rect.right : undefined,
-      });
-    }
-    setOpen(true);
-  }
+  const ref = useRef(null);
 
   useEffect(() => {
-    if (!open) return;
     function handleClickOutside(e) {
-      if (
-        btnRef.current && !btnRef.current.contains(e.target) &&
-        menuRef.current && !menuRef.current.contains(e.target)
-      ) {
+      if (ref.current && !ref.current.contains(e.target)) {
         setOpen(false);
         setQuery("");
       }
     }
-    function updatePosition() {
-      if (!btnRef.current) return;
-      const rect = btnRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 4,
-        left: align === "right" ? undefined : rect.left,
-        right: align === "right" ? window.innerWidth - rect.right : undefined,
-      });
-    }
-    function handleScroll(e) {
-      if (menuRef.current && e.target && menuRef.current.contains(e.target)) return;
-      updatePosition();
-    }
-    function handleResize() {
-      updatePosition();
-    }
     document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("resize", handleResize);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [open]);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filteredOptions = options.filter((o) =>
     o.label.toLowerCase().includes(query.toLowerCase())
@@ -650,12 +424,8 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
   }
 
   return (
-    <th className={`relative px-2 py-3 font-medium truncate text-[11px] ${className}`}>
-      <button
-        ref={btnRef}
-        className="flex items-center gap-1 hover:text-foreground"
-        onClick={() => (open ? setOpen(false) : openMenu())}
-      >
+    <th className={`relative px-4 py-3 font-medium ${className}`} ref={ref}>
+      <button className="flex items-center gap-1 hover:text-foreground" onClick={() => setOpen((v) => !v)}>
         {label}
         <ChevronRight className={`size-3 transition-transform ${open ? "rotate-90" : ""}`} />
         {isActive && (
@@ -665,12 +435,12 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
         )}
       </button>
 
-      {open && createPortal(
+      {open && (
         <div
-          ref={menuRef}
           onClick={(e) => e.stopPropagation()}
-          style={{ position: "fixed", top: position.top, left: position.left, right: position.right }}
-          className="z-50 w-56 rounded-lg border border-border bg-card p-2 text-left font-normal normal-case text-foreground shadow-[var(--shadow-card)]"
+          className={`absolute top-9 z-50 w-56 rounded-lg border border-border bg-card p-2 text-left font-normal normal-case text-foreground shadow-[var(--shadow-card)] ${
+            align === "right" ? "right-0" : "left-0"
+          }`}
         >
           <div className="mb-1.5 flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
             <Search className="size-3.5 text-muted-foreground" />
@@ -710,79 +480,58 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
               ))
             )}
           </div>
-        </div>,
-        document.body
+        </div>
       )}
     </th>
   );
 }
-function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser, onNavigate, expandedTable }) {
-  const compact = !expandedTable;
+
+function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser }) {
   return (
     <>
       <tr onClick={onToggle} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50">
-        <td className={compact ? "px-1 py-3 text-center" : "px-4 py-3.5 text-center"}>
+        <td className="px-4 py-3.5 text-center">
           <ChevronRight
             className={`size-4 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`}
           />
         </td>
-        <td className={compact ? "px-2 py-3 font-semibold truncate" : "px-4 py-3.5 font-semibold whitespace-nowrap"}>#{demande.idDemande}</td>
-        <td className={compact ? "px-2 py-3" : "px-4 py-3.5"}>
-          <div className={compact ? "flex items-center gap-1.5 overflow-hidden" : "flex items-center gap-2.5"}>
+        <td className="px-4 py-3.5 font-semibold">#{demande.idDemande}</td>
+        <td className="px-4 py-3.5">
+          <div className="flex items-center gap-2.5">
             <Avatar name={demande.utilisateurNom} />
-            <span className={compact ? "truncate" : ""}>{demande.utilisateurNom}</span>
+            {demande.utilisateurNom}
           </div>
         </td>
-        <td className={compact ? "px-2 py-3 overflow-hidden" : "px-4 py-3.5 whitespace-nowrap"}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const capexId = demande.capexId ?? demande.idCapex ?? demande.CapexId ?? null;
-              onNavigate?.("suivi", { capexNom: demande.capexNom, capexId });
-            }}
-            className={compact ? "flex max-w-full cursor-pointer items-center gap-1 overflow-hidden text-muted-foreground hover:text-primary hover:underline underline-offset-2" : "flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-primary hover:underline underline-offset-2"}
-            title={`Voir suivi ${demande.capexNom}`}
-          >
-            <Calendar className="size-3.5 shrink-0" /> <span className={compact ? "truncate" : ""}>{demande.capexNom}</span>
-          </button>
+        <td className="px-4 py-3.5">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Calendar className="size-3.5" /> {demande.capexNom}
+          </div>
         </td>
-        <td className={compact ? "px-2 py-3 overflow-hidden" : "px-4 py-3.5 whitespace-nowrap"}>
-          {(() => {
-            const { icon: DeptIcon, color } = getDeptConfig(demande.departementNom || demande.DepartementNom);
-            return (
-              <span className={compact ? "flex items-center gap-1.5 overflow-hidden text-muted-foreground" : "flex items-center gap-1.5 text-muted-foreground"}>
-                <DeptIcon className="size-3.5 shrink-0" style={{ color }} />
-                <span className={compact ? "truncate" : ""}>{demande.departementNom || demande.DepartementNom || "—"}</span>
-                <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-              </span>
-            );
-          })()}
-        </td>
-        <td className={compact ? "px-1 py-3 overflow-hidden" : "whitespace-nowrap px-4 py-3.5"}><div className={compact ? "overflow-hidden" : ""}><StatutBadge statut={demande.statut} /></div></td>
-        <td className={compact ? "px-2 py-3 overflow-hidden" : "px-4 py-3.5 whitespace-nowrap"}>
+        <td className="whitespace-nowrap px-4 py-3.5"><StatutBadge statut={demande.statut} /></td>
+        <td className="px-4 py-3.5">
           {demande.rFx ? (
-            <span className={compact ? "flex items-center gap-1 overflow-hidden" : "flex items-center gap-1.5"}>
-              <FileText className="size-3.5 shrink-0 text-muted-foreground" /> <span className={compact ? "truncate text-xs" : ""}>{demande.rFx}</span>
+            <span className="flex items-center gap-1.5">
+              <FileText className="size-3.5 text-muted-foreground" /> {demande.rFx}
             </span>
           ) : (
             "—"
           )}
         </td>
-        <td className={compact ? "px-2 py-3 overflow-hidden" : "whitespace-nowrap px-4 py-3.5"}>
-          <span className={compact ? "flex items-center gap-1 overflow-hidden text-muted-foreground" : "flex items-center gap-1.5 text-muted-foreground"}>
-            <Clock className="size-3.5 shrink-0" /> <span className={compact ? "truncate text-xs" : ""}>{new Date(demande.createAt).toLocaleDateString("fr-FR")}</span>
+        <td className="whitespace-nowrap px-4 py-3.5">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Clock className="size-3.5" /> {new Date(demande.createAt).toLocaleDateString("fr-FR")}
           </span>
         </td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidationAchat1 ? new Date(demande.dateValidationAchat1).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidationAchat2 ? new Date(demande.dateValidationAchat2).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateChef ? new Date(demande.dateValidateChef).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateFinance ? new Date(demande.dateValidateFinance).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateDirecteur ? new Date(demande.dateValidateDirecteur).toLocaleDateString("fr-FR") : "—"}</td>
+        <td className="whitespace-nowrap px-4 py-3.5 text-muted-foreground">{demande.dateValidationAchat1 ? new Date(demande.dateValidationAchat1).toLocaleDateString("fr-FR") : "—"}</td>
+        <td className="whitespace-nowrap px-4 py-3.5 text-muted-foreground">{demande.dateValidationAchat2 ? new Date(demande.dateValidationAchat2).toLocaleDateString("fr-FR") : "—"}</td>
+        <td className="whitespace-nowrap px-4 py-3.5 text-muted-foreground">{demande.dateValidateChef ? new Date(demande.dateValidateChef).toLocaleDateString("fr-FR") : "—"}</td>
+        <td className="whitespace-nowrap px-4 py-3.5 text-muted-foreground">{demande.dateValidateFinance ? new Date(demande.dateValidateFinance).toLocaleDateString("fr-FR") : "—"}</td>
+        <td className="whitespace-nowrap px-4 py-3.5 text-muted-foreground">{demande.dateValidateDirecteur ? new Date(demande.dateValidateDirecteur).toLocaleDateString("fr-FR") : "—"}</td>
       </tr>
 
       {expanded && (
         <tr>
-          <td colSpan={13} className="cursor-default bg-muted/40 px-6 py-4">
+          <td colSpan={12} className="cursor-default bg-muted/40 px-6 py-4">
             <DemandeDetails demande={demande} details={details} onValider={onValider} onRefuser={onRefuser} />
           </td>
         </tr>
@@ -806,7 +555,7 @@ function DemandeDetails({ demande, details, onValider, onRefuser }) {
 
   const total = details.reduce((sum, d) => sum + d.quantite * d.prix, 0);
 
-    return (
+  return (
     <div>
       {datesValidation.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">

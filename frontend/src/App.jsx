@@ -2,21 +2,27 @@ import { useState } from "react";
 import DemandesPage from "./views/DemandesPage";
 import SuiviCapex from "./views/SuiviCapex";
 import Dashboard from "./views/Dashboard";
+import BonCommandesPage from "./views/BonCommandesPage";
 
-const CURRENT_USER = { name: " A.", role: "Fin" }; // à remplacer par ton auth réelle
+const CURRENT_USER = { name: "ECI", role: "" }; // à remplacer par ton auth réelle
 
 const PAGES = {
   dashboard: Dashboard,
   demandes: DemandesPage,
   suivi: SuiviCapex,
+  boncommandes: BonCommandesPage,
 };
 
 function App() {
-  const [page, setPage] = useState("dashboard");
+  const [route, setRoute] = useState({ name: "dashboard", params: {} });
 
-  const PageComponent = PAGES[page] ?? Dashboard;
+  function navigate(name, params = {}) {
+    setRoute({ name, params });
+  }
 
-  return <PageComponent onNavigate={setPage} user={CURRENT_USER} />;
+  const PageComponent = PAGES[route.name] ?? Dashboard;
+
+  return <PageComponent onNavigate={navigate} params={route.params} user={CURRENT_USER} />;
 }
 
 export default App;
