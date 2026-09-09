@@ -104,6 +104,7 @@ public class CapexService : ICapexService
             .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
 
         var resteCalcule = await CalculateResteBudgetAsync(capexId, entity.BudgetTotal);
+        var stocke = entity.BudgetRestant;
 
         return new ConsommationCapexDto
         {
@@ -111,6 +112,9 @@ public class CapexService : ICapexService
             NomCapex = entity.NomCapex,
             BudgetTotal = entity.BudgetTotal,
             BudgetRestant = resteCalcule,
+            BudgetRestantStocke = stocke,
+            BudgetRestantCalcule = resteCalcule,
+            ResteBudgetIncoherent = stocke != resteCalcule,
             MontantEnAttente = montantEnAttente,
             ParDepartement = parDepartement
         };

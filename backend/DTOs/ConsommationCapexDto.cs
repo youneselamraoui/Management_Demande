@@ -16,6 +16,9 @@ public class ConsommationCapexDto
     public decimal BudgetRestant { get; set; }
     [JsonIgnore]
     public decimal ResteBudget { get => BudgetRestant; set => BudgetRestant = value; }
+    public decimal BudgetRestantStocke { get; set; }
+    public decimal BudgetRestantCalcule { get; set; }
+    public bool ResteBudgetIncoherent { get; set; }
     public decimal MontantEnAttente { get; set; }
     public List<ConsommationDepartementDto> ParDepartement { get; set; } = new();
 }

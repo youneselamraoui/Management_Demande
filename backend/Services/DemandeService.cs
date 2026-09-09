@@ -170,6 +170,25 @@ public class DemandeService : IDemandeService
                 throw new BusinessException("Toutes les validations doivent être faites avant Bon de commande.");
             demande.Capex.BudgetRestant = resteCalcule - montant;
             demande.Statut = StatutDemande.BonDeCommande;
+            // Auto-création BonCommande si inexistant
+            var fournisseur = await _context.Fournisseurs.FirstOrDefaultAsync();
+            if (fournisseur == null)
+            {
+                fournisseur = new backend.Data.EfModels.Fournisseur { Nom = "Fournisseur par défaut" };
+                _context.Fournisseurs.Add(fournisseur);
+                await _context.SaveChangesAsync();
+            }
+            var existsBc = await _context.BonCommandes.AnyAsync(b => b.DemandeId == demande.Id);
+            if (!existsBc)
+            {
+                _context.BonCommandes.Add(new backend.Data.EfModels.BonCommande
+                {
+                    DemandeId = demande.Id,
+                    Po = $"PO-{demande.Id:00000}",
+                    FournisseurId = fournisseur.Id,
+                    DateCreation = maintenant
+                });
+            }
             break;
         default:
             throw new BusinessException($"Statut {demande.Statut} non géré pour validation.");

@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   BarChart3,
+  FileText,
   Settings,
   ShieldCheck,
   HelpCircle,
@@ -9,6 +10,8 @@ import {
   ChevronDown,
   ChevronLeft,
   Search,
+  Menu,
+  X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import logo from "../assets/img/ECI_logo1.png";
@@ -17,6 +20,7 @@ const MENU_ITEMS = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { key: "demandes", label: "Suivi demandes d'achat", icon: ClipboardList },
   { key: "suivi", label: "Suivi Capex", icon: BarChart3 },
+  { key: "boncommandes", label: "Bons de commande", icon: FileText },
 ];
 const ACCOUNT_ITEMS = [
   { key: "settings", label: "Paramètres", icon: Settings },
@@ -61,22 +65,26 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("sidebar:collapsed") === "1"; } catch { return false; }
   });
+  const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => {
     try { localStorage.setItem("sidebar:collapsed", collapsed ? "1" : "0"); } catch {}
   }, [collapsed]);
 
+  function handleNavigate(key) {
+    onNavigate(key);
+    setMobileOpen(false);
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className={`hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto scrollbar-hide transition-all duration-300 ${collapsed ? "w-[72px] p-2" : "w-64"}`}>
-        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between gap-2"}`}>
+      {mobileOpen && <div className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />}
+      <aside className={`${mobileOpen ? "flex" : "hidden"} lg:flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 fixed lg:sticky inset-y-0 left-0 z-40 lg:z-auto h-screen lg:h-screen overflow-y-auto scrollbar-hide transition-all duration-300 ${collapsed ? "lg:w-[72px] lg:p-2 w-64" : "w-64"}`}>
+        <div className={`flex items-center ${collapsed ? "justify-center lg:justify-center" : "justify-between gap-2"}`}>
           {!collapsed && <img src={logo} alt="" className="w-full h-auto flex-1 min-w-0" />}
-          {collapsed && <img src={logo} alt="" className="size-8 object-contain" />}
-          <button
-            onClick={() => setCollapsed((v) => !v)}
-            title={collapsed ? "Agrandir la barre latérale" : "Réduire la barre latérale"}
-            className="grid size-7 shrink-0 place-items-center rounded-md border border-sidebar-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors"
-          >
-            <ChevronLeft className={`size-4 transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`} />
+          {collapsed && <img src={logo} alt="" className="hidden lg:block size-8 object-contain" />}
+          {collapsed && <img src={logo} alt="" className="lg:hidden w-full h-auto flex-1 min-w-0" />}
+          <button onClick={() => setMobileOpen(false)} className="grid lg:hidden size-7 place-items-center rounded-md border border-sidebar-border bg-card text-muted-foreground hover:bg-muted">
+            <X className="size-4" />
           </button>
         </div>
         {!collapsed && (
@@ -87,7 +95,6 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
               placeholder="Rechercher..."
               className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
             />
-            <kbd className="rounded bg-muted px-1.5 py-0.5 text-[8px]">⌘F</kbd>
           </div>
         )}
         {collapsed && (
@@ -96,28 +103,28 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
           </button>
         )}
 
-        {!collapsed ? <SectionLabel>Menu</SectionLabel> : <div className="pt-4" />}
+        {!collapsed || mobileOpen ? <SectionLabel>Menu</SectionLabel> : <div className="pt-4" />}
         <nav className="space-y-1">
           {MENU_ITEMS.map((item) => (
-            <NavItem key={item.key} item={item} active={active} onNavigate={onNavigate} collapsed={collapsed} />
+            <NavItem key={item.key} item={item} active={active} onNavigate={handleNavigate} collapsed={collapsed && !mobileOpen} />
           ))}
         </nav>
 
-        {!collapsed ? <SectionLabel>Compte</SectionLabel> : <div className="pt-4" />}
+        {!collapsed || mobileOpen ? <SectionLabel>Compte</SectionLabel> : <div className="pt-4" />}
         <nav className="space-y-1">
           {ACCOUNT_ITEMS.map((item) => (
-            <NavItem key={item.key} item={item} active={active} onNavigate={onNavigate} collapsed={collapsed} />
+            <NavItem key={item.key} item={item} active={active} onNavigate={handleNavigate} collapsed={collapsed && !mobileOpen} />
           ))}
         </nav>
 
-        {!collapsed ? <SectionLabel>Support</SectionLabel> : <div className="pt-4" />}
+        {!collapsed || mobileOpen ? <SectionLabel>Support</SectionLabel> : <div className="pt-4" />}
         <nav className="space-y-1">
           {SUPPORT_ITEMS.map((item) => (
-            <NavItem key={item.key} item={item} active={active} onNavigate={onNavigate} collapsed={collapsed} />
+            <NavItem key={item.key} item={item} active={active} onNavigate={handleNavigate} collapsed={collapsed && !mobileOpen} />
           ))}
         </nav>
 
-        {!collapsed ? (
+        {!collapsed || mobileOpen ? (
           <div className="mt-auto rounded-2xl bg-primary p-5 text-center text-primary-foreground">
             <div className="mx-auto grid size-12 place-items-center rounded-full bg-primary-foreground/15">
               <HelpCircle className="size-6" />
@@ -142,6 +149,9 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4 lg:px-10">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <button onClick={() => setMobileOpen(true)} className="grid lg:hidden size-8 place-items-center rounded-md border border-border text-muted-foreground hover:bg-muted">
+              <Menu className="size-4" />
+            </button>
             <button
               onClick={() => setCollapsed((v) => !v)}
               title={collapsed ? "Agrandir" : "Réduire"}

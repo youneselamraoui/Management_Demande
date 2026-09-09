@@ -40,6 +40,7 @@ builder.Services.AddScoped<IUtilisateurService, UtilisateurService>();
 builder.Services.AddScoped<ICapexService, CapexService>();
 builder.Services.AddScoped<IDemandeService, DemandeService>();
 builder.Services.AddScoped<IDetailDemandeService, DetailDemandeService>();
+builder.Services.AddScoped<IBonCommandeService, BonCommandeService>();
 
 var app = builder.Build();
 
@@ -100,6 +101,32 @@ using (var scope = app.Services.CreateScope())
         }
         db.SaveChanges();
         Console.WriteLine("[DB] BudgetRestant recalcule");
+        // Assurer un fournisseur par défaut et backfill BonCommandes pour les demandes déjà en BonDeCommande
+        try
+        {
+            if (!db.Fournisseurs.Any())
+            {
+                db.Fournisseurs.Add(new Fournisseur { Nom = "Fournisseur par défaut" });
+                db.SaveChanges();
+            }
+            var fourDef = db.Fournisseurs.First();
+            var existingBcIds = db.BonCommandes.Select(b => b.DemandeId).ToHashSet();
+            var demandesBc = db.Demandes.Where(d => d.Statut == backend.Models.StatutDemande.BonDeCommande).ToList();
+            var toAdd = demandesBc.Where(d => !existingBcIds.Contains(d.Id)).Select(d => new BonCommande
+            {
+                DemandeId = d.Id,
+                Po = $"PO-{d.Id:00000}",
+                FournisseurId = fourDef.Id,
+                DateCreation = d.DateValidateDirecteur ?? d.CreatedAt
+            }).ToList();
+            if (toAdd.Any())
+            {
+                db.BonCommandes.AddRange(toAdd);
+                db.SaveChanges();
+                Console.WriteLine($"[DB] Backfill BonCommandes: {toAdd.Count} créés");
+            }
+        }
+        catch (Exception ex) { Console.WriteLine($"[DB] BonCommande backfill warning: {ex.Message}"); }
     }
     catch (Exception ex) { Console.WriteLine($"[DB] Init warning: {ex.Message}"); }
 }

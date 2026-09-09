@@ -80,9 +80,10 @@ const STATUT_LABELS = {
 export function StatutBadge({ statut }) {
   return (
     <span
-      className={`inline-flex max-w-[180px] items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-center text-xs font-semibold leading-none ${
+      className={`inline-flex max-w-full items-center justify-center truncate rounded-full px-2 py-1 text-center text-[11px] font-semibold leading-none ${
         STATUT_STYLES[statut] ?? "bg-muted text-muted-foreground"
       }`}
+      title={STATUT_LABELS[statut] ?? statut}
     >
       {STATUT_LABELS[statut] ?? statut}
     </span>

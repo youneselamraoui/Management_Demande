@@ -68,3 +68,6 @@ export const getUtilisateurs = () => request("/utilisateurs");
 export const getCapex = () => request("/capex");
 export const getConsommationCapex = (capexId) =>
   request(`/capex/${capexId}/consommation-departements`);
+export const getBonCommandes = () => request("/boncommandes");
+export const createBonCommande = (data) =>
+  request("/boncommandes", { method: "POST", body: JSON.stringify(data) });
