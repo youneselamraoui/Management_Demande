@@ -15,7 +15,7 @@ public class DemandeService : IDemandeService
     public async Task<Demande?> GetDemandeAsync(int id)
     {
         var entity = await _context.Demandes
-            .Include(d => d.Utilisateur)
+            .Include(d => d.Utilisateur).ThenInclude(u => u.Departement)
             .Include(d => d.Capex)
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id);
@@ -26,7 +26,7 @@ public class DemandeService : IDemandeService
     public async Task<List<Demande>> GetAllDemandesAsync()
     {
         var entities = await _context.Demandes
-            .Include(d => d.Utilisateur)
+            .Include(d => d.Utilisateur).ThenInclude(u => u.Departement)
             .Include(d => d.Capex)
             .AsNoTracking()
             .ToListAsync();
@@ -37,6 +37,7 @@ public class DemandeService : IDemandeService
     public async Task<Demande> CreateDemandeAsync(CreateDemandeDto dto)
     {
         var utilisateur = await _context.Utilisateurs
+            .Include(u => u.Departement)
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == dto.UtilisateurId);
         if (utilisateur is null)
@@ -84,11 +85,13 @@ public class DemandeService : IDemandeService
         _context.Demandes.Add(entity);
         await _context.SaveChangesAsync();
 
+        var departementNom = utilisateur.Departement?.Nom ?? (await _context.Departements.AsNoTracking().Where(d => d.Id == utilisateur.DepartementId).Select(d => d.Nom).FirstOrDefaultAsync()) ?? string.Empty;
         return new Demande
         {
             Id = entity.Id,
             UtilisateurId = entity.UtilisateurId,
             UtilisateurNom = utilisateur.Nom,
+            DepartementNom = departementNom,
             Statut = entity.Statut,
             CapexId = entity.CapexId,
             CapexNom = capex.NomCapex,
@@ -107,7 +110,8 @@ public class DemandeService : IDemandeService
         Id = entity.Id,
         UtilisateurId = entity.UtilisateurId,
         UtilisateurNom = entity.Utilisateur?.Nom ?? string.Empty,
-        Statut = entity.Statut, 
+        DepartementNom = entity.Utilisateur?.Departement?.Nom ?? string.Empty,
+        Statut = entity.Statut,
         CapexId = entity.CapexId,
         CapexNom = entity.Capex?.NomCapex ?? string.Empty,
         RFX = entity.RFX,

@@ -7,6 +7,7 @@ function normalizeDemande(d) {
   const createdAt = d.createAt ?? d.CreatedAt ?? d.createdAt ?? d.CreateAt;
   const dv1 = d.dateValidation1 ?? d.DateValidationAchat1 ?? d.dateValidationAchat1;
   const dv2 = d.dateValidation2 ?? d.DateValidationAchat2 ?? d.dateValidationAchat2;
+  const dept = d.departementNom ?? d.DepartementNom ?? d.departement ?? d.Departement ?? d.department ?? "";
   return {
     ...d,
     id, Id: id, idDemande: id,
@@ -14,6 +15,7 @@ function normalizeDemande(d) {
     createAt: createdAt, CreatedAt: createdAt, createdAt: createdAt,
     dateValidation1: dv1, DateValidationAchat1: dv1, dateValidationAchat1: dv1,
     dateValidation2: dv2, DateValidationAchat2: dv2, dateValidationAchat2: dv2,
+    departementNom: dept, DepartementNom: dept, departement: dept,
   };
 }
 function normalizeCapex(c) {

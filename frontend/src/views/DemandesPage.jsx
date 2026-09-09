@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/AppShell";
-import { Search, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, MoreHorizontal, Pencil, Check, X } from "lucide-react";
+import { Search, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, MoreHorizontal, Pencil, Check, X, Building2 } from "lucide-react";
 import { StatutBadge, Avatar, StatCard } from "../components/ui/Primitives";
 import CreateDemandeModal from "../components/CreateDemandeModal";
 import { getDemandes, getDetailsDemande, refuserDemande, validerDemande } from "../api/client";
@@ -38,6 +38,7 @@ const STATUT_LABELS = {
 const DEFAULT_FILTERS = {
   demandeur: "Tous",
   capex: "Tous",
+  departement: "Tous",
   statut: "Tous",
   rfx: "Tous",
   createAt: "Tous",
@@ -88,7 +89,7 @@ function dateOptions(list, getRaw) {
   return options;
 }
 
-export default function DemandesPage({ onNavigate, user }) {
+export default function DemandesPage({ onNavigate, params, user }) {
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -98,7 +99,17 @@ export default function DemandesPage({ onNavigate, user }) {
   const [showModal, setShowModal] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [detailsCache, setDetailsCache] = useState({});
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState(() => ({
+    ...DEFAULT_FILTERS,
+    ...(params?.capex ? { capex: params.capex } : {}),
+  }));
+
+  useEffect(() => {
+    if (params?.capex && params.capex !== filters.capex) {
+      setFilters((prev) => ({ ...prev, capex: params.capex }));
+      setPage(1);
+    }
+  }, [params?.capex]);
 
   useEffect(() => { load(); }, []);
 
@@ -153,6 +164,7 @@ export default function DemandesPage({ onNavigate, user }) {
   // Options disponibles pour chaque filtre de colonne, dérivées des demandes chargées
   const demandeurOptions = textOptions(demandes, (d) => d.utilisateurNom);
   const capexOptions = textOptions(demandes, (d) => d.capexNom);
+  const departementOptions = textOptions(demandes, (d) => d.departementNom || d.DepartementNom);
   const rfxOptions = textOptions(demandes, (d) => d.rFx || d.RFX);
   const statutOptions = STATUTS.map((s) => ({ value: s, label: STATUT_LABELS[s] }));
   const createAtOptions = dateOptions(demandes, (d) => d.createAt);
@@ -171,6 +183,7 @@ export default function DemandesPage({ onNavigate, user }) {
     })
     .filter((d) => filters.demandeur === "Tous" || d.utilisateurNom === filters.demandeur)
     .filter((d) => filters.capex === "Tous" || d.capexNom === filters.capex)
+    .filter((d) => filters.departement === "Tous" || (d.departementNom || d.DepartementNom) === filters.departement)
     .filter((d) => filters.rfx === "Tous" || (d.rFx || d.RFX) === filters.rfx)
     .filter((d) => filters.createAt === "Tous" || formatDate(d.createAt) === filters.createAt)
     .filter((d) => filters.achat1 === "Tous" || formatDate(d.dateValidationAchat1) === filters.achat1)
@@ -185,6 +198,7 @@ export default function DemandesPage({ onNavigate, user }) {
         String(d.idDemande).includes(q) ||
         (d.utilisateurNom || "").toLowerCase().includes(q) ||
         (d.capexNom || "").toLowerCase().includes(q) ||
+        (d.departementNom || d.DepartementNom || "").toLowerCase().includes(q) ||
         (d.statut || "").toLowerCase().includes(q) ||
         (d.rFx || d.RFX || "").toLowerCase().includes(q) ||
         formatDate(d.createAt).includes(q) ||
@@ -277,7 +291,7 @@ export default function DemandesPage({ onNavigate, user }) {
       {!loading && !error && (
         <div className="mt-6 overflow-hidden rounded-2xl border border-border">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] text-sm">
+            <table className="w-full min-w-[1350px] text-sm">
               <thead>
                 <tr className="bg-muted text-left text-xs text-muted-foreground">
                   <th className="w-10 px-4 py-3" />
@@ -293,6 +307,12 @@ export default function DemandesPage({ onNavigate, user }) {
                     options={capexOptions}
                     selected={filters.capex}
                     onChange={(v) => updateFilter("capex", v)}
+                  />
+                  <ColumnFilterHeader
+                    label="Département"
+                    options={departementOptions}
+                    selected={filters.departement}
+                    onChange={(v) => updateFilter("departement", v)}
                   />
                   <ColumnFilterHeader
                     label="Statut"
@@ -351,7 +371,7 @@ export default function DemandesPage({ onNavigate, user }) {
               <tbody>
                 {pageItems.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">
                       Aucune demande trouvée.
                     </td>
                   </tr>
@@ -365,6 +385,7 @@ export default function DemandesPage({ onNavigate, user }) {
                       details={detailsCache[d.idDemande]}
                       onValider={() => traiterDemande(d.idDemande, "valider")}
                       onRefuser={() => traiterDemande(d.idDemande, "refuser")}
+                      onNavigate={onNavigate}
                     />
                   ))
                 )}
@@ -539,7 +560,7 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
     </th>
   );
 }
-function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser }) {
+function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser, onNavigate }) {
   return (
     <>
       <tr onClick={onToggle} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50">
@@ -556,9 +577,22 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
           </div>
         </td>
         <td className="px-4 py-3.5">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const capexId = demande.capexId ?? demande.idCapex ?? demande.CapexId ?? null;
+              onNavigate?.("suivi", { capexNom: demande.capexNom, capexId });
+            }}
+            className="flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-primary hover:underline underline-offset-2"
+            title={`Voir suivi ${demande.capexNom}`}
+          >
             <Calendar className="size-3.5" /> {demande.capexNom}
-          </div>
+          </button>
+        </td>
+        <td className="px-4 py-3.5">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Building2 className="size-3.5" /> {demande.departementNom || demande.DepartementNom || "—"}
+          </span>
         </td>
         <td className="whitespace-nowrap px-4 py-3.5"><StatutBadge statut={demande.statut} /></td>
         <td className="px-4 py-3.5">
@@ -584,7 +618,7 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
 
       {expanded && (
         <tr>
-          <td colSpan={12} className="cursor-default bg-muted/40 px-6 py-4">
+          <td colSpan={13} className="cursor-default bg-muted/40 px-6 py-4">
             <DemandeDetails demande={demande} details={details} onValider={onValider} onRefuser={onRefuser} />
           </td>
         </tr>

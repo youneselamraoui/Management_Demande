@@ -11,6 +11,7 @@ public class Demande
     public StatutDemande Statut { get; set; }
     public int CapexId { get; set; }
     public string? CapexNom { get; set; }
+    public string? DepartementNom { get; set; }
     public string? RFX { get; set; }
     [JsonIgnore]
     public string? RFx { get => RFX; set => RFX = value; }

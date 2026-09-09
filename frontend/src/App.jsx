@@ -12,11 +12,15 @@ const PAGES = {
 };
 
 function App() {
-  const [page, setPage] = useState("dashboard");
+  const [route, setRoute] = useState({ name: "dashboard", params: {} });
 
-  const PageComponent = PAGES[page] ?? Dashboard;
+  function navigate(name, params = {}) {
+    setRoute({ name, params });
+  }
 
-  return <PageComponent onNavigate={setPage} user={CURRENT_USER} />;
+  const PageComponent = PAGES[route.name] ?? Dashboard;
+
+  return <PageComponent onNavigate={navigate} params={route.params} user={CURRENT_USER} />;
 }
 
 export default App;

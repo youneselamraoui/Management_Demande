@@ -7,21 +7,42 @@ import { getCapex, getConsommationCapex } from "../api/client";
 const DEPT_ICONS = [Monitor, Truck, CreditCard, Layers];
 const DEPT_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)"];
 
-export default function SuiviCapex({ onNavigate, user }) {
+export default function SuiviCapex({ onNavigate, params, user }) {
   const [capexList, setCapexList] = useState([]);
   const [selectedCapexId, setSelectedCapexId] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  function resolveCapexId(list, p) {
+    if (!list.length) return "";
+    if (p?.capexId != null && p.capexId !== "") {
+      const byId = list.find((c) => String(c.capexId) === String(p.capexId));
+      if (byId) return byId.capexId;
+    }
+    if (p?.capexNom) {
+      const byNom = list.find((c) => String(c.nomCapex).toLowerCase() === String(p.capexNom).toLowerCase());
+      if (byNom) return byNom.capexId;
+    }
+    return list[0].capexId;
+  }
+
   useEffect(() => {
     getCapex()
       .then((list) => {
         setCapexList(list);
-        if (list.length > 0) setSelectedCapexId(list[0].capexId);
+        if (list.length > 0) setSelectedCapexId(resolveCapexId(list, params));
       })
       .catch((e) => setError(e.message));
   }, []);
+
+  useEffect(() => {
+    if (!capexList.length || !params) return;
+    const resolved = resolveCapexId(capexList, params);
+    if (resolved && String(resolved) !== String(selectedCapexId)) {
+      setSelectedCapexId(resolved);
+    }
+  }, [params?.capexId, params?.capexNom]);
 
   useEffect(() => {
     if (!selectedCapexId) return;
@@ -230,7 +251,7 @@ export default function SuiviCapex({ onNavigate, user }) {
 
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            onClick={() => onNavigate("demandes")}
+            onClick={() => onNavigate("demandes", { capex: data.nomCapex })}
           >
             Voir toutes les demandes →
           </button>
