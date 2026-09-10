@@ -7,13 +7,12 @@ using Microsoft.EntityFrameworkCore;
 namespace backend.Data.EfModels;
 
 [Table("Utilisateurs")]
-[Index("Nom", Name = "UQ_NomU", IsUnique = true)]
 public partial class Utilisateur
 {
     [Key]
     public int Id { get; set; }
 
-    [StringLength(200)]
+    [Column(TypeName = "nvarchar(max)")]
     public string Nom { get; set; } = null!;
 
     [Column("DepartementID")]

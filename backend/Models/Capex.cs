@@ -5,8 +5,8 @@ public class Capex
 {
     public int CapexId { get; set; }
     public string NomCapex { get; set; } = string.Empty;
-    public decimal BudgetTotal { get; set; }
-    public decimal BudgetRestant { get; set; }
+    public double BudgetTotal { get; set; }
+    public double BudgetRestant { get; set; }
     [JsonIgnore]
-    public decimal ResteBudget { get => BudgetRestant; set => BudgetRestant = value; }
+    public double ResteBudget { get => BudgetRestant; set => BudgetRestant = value; }
 }

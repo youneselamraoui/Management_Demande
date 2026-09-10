@@ -122,8 +122,8 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
               PO: b.po ?? b.Po ?? "",
               Article: line.article,
               Quantite: line.quantite,
-              PrixUnitaire: line.prix,
-              SousTotal: line.quantite * line.prix,
+              PrixUnitaire: line.prix ?? "",
+              SousTotal: line.quantite * (line.prix ?? 0),
               Devis: line.devis || "",
             }));
           } else if (Array.isArray(d) && !d.length) {
@@ -348,7 +348,7 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
 
 function BonCommandeDetails({ details }) {
   if (!details || details.length === 0) return <p className="text-sm text-muted-foreground">Aucun article.</p>;
-  const total = details.reduce((s, d) => s + d.quantite * d.prix, 0);
+  const total = details.reduce((s, d) => s + d.quantite * (d.prix ?? 0), 0);
   return (
     <table className="w-full border-collapse text-sm">
       <thead>
@@ -365,8 +365,8 @@ function BonCommandeDetails({ details }) {
           <tr key={line.id} className="border-t border-border">
             <td className="px-2 py-1.5">{line.article}</td>
             <td className="px-2 py-1.5">{line.quantite}</td>
-            <td className="px-2 py-1.5">{line.prix.toLocaleString("fr-FR")} $</td>
-            <td className="px-2 py-1.5">{(line.quantite * line.prix).toLocaleString("fr-FR")} $</td>
+            <td className="px-2 py-1.5">{line.prix != null ? line.prix.toLocaleString("fr-FR") + " $" : "—"}</td>
+            <td className="px-2 py-1.5">{(line.quantite * (line.prix ?? 0)).toLocaleString("fr-FR")} $</td>
             <td className="px-2 py-1.5">{line.devis || "—"}</td>
           </tr>
         ))}

@@ -41,7 +41,7 @@ public class DetailDemandeService : IDetailDemandeService
 
         if (dto.Quantite <= 0)
             throw new BusinessException("La quantité doit être supérieure à 0.");
-        if (dto.Prix < 0)
+        if (dto.Prix != null && dto.Prix < 0)
             throw new BusinessException("Le prix ne peut pas être négatif.");
 
         var entity = new EfDetailDemande

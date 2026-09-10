@@ -14,15 +14,15 @@ public partial class DetailDemande
 
     public int DemandeId { get; set; }
 
-    [StringLength(200)]
+    [Column(TypeName = "nvarchar(max)")]
     public string Article { get; set; } = null!;
 
     public int Quantite { get; set; }
 
-    [Column(TypeName = "decimal(18, 2)")]
-    public decimal Prix { get; set; }
+    [Column(TypeName = "float")]
+    public double? Prix { get; set; }
 
-    [StringLength(200)]
+    [Column(TypeName = "nvarchar(max)")]
     public string? Devis { get; set; }
 
     [ForeignKey("DemandeId")]

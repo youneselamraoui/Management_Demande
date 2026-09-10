@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data.EfModels;
 
@@ -11,9 +12,11 @@ using backend.Data.EfModels;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ProjetDbContext))]
-    partial class ProjetDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260910132709_FixStatutRfxMax")]
+    partial class FixStatutRfxMax
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -140,10 +143,14 @@ namespace backend.Data.Migrations
 
                     b.Property<string>("Nom")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id")
                         .HasName("PK__Departem__3214EC075C2917C8");
+
+                    b.HasIndex(new[] { "Nom" }, "UQ_Nom")
+                        .IsUnique();
 
                     b.ToTable("Departements");
                 });
@@ -211,12 +218,16 @@ namespace backend.Data.Migrations
 
                     b.Property<string>("Nom")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id")
                         .HasName("PK__Utilisat__3214EC075DBA5179");
 
                     b.HasIndex("DepartementId");
+
+                    b.HasIndex(new[] { "Nom" }, "UQ_NomU")
+                        .IsUnique();
 
                     b.ToTable("Utilisateurs", (string)null);
                 });

@@ -45,7 +45,7 @@ public partial class ProjetDbContext : DbContext
 
             entity.Property(e => e.Statut)
                 .HasConversion<string>()
-                .HasMaxLength(50);
+                .HasColumnType("nvarchar(max)");
 
             entity.HasOne(d => d.Capex).WithMany(p => p.Demandes)
                 .OnDelete(DeleteBehavior.ClientSetNull)

@@ -58,7 +58,7 @@ public class DemandeService : IDemandeService
                 throw new BusinessException("Le nom de l'article est obligatoire.");
             if (ligne.Quantite <= 0)
                 throw new BusinessException($"Quantité invalide pour '{ligne.Article}'.");
-            if (ligne.Prix < 0)
+            if (ligne.Prix != null && ligne.Prix < 0)
                 throw new BusinessException($"Prix invalide pour '{ligne.Article}'.");
         }
 
@@ -136,7 +136,7 @@ public class DemandeService : IDemandeService
     if (!demande.Statut.EstEnAttenteDeValidation())
         throw new BusinessException("Cette demande a déjà été traitée.");
 
-    var montant = demande.DetailDemandes.Sum(dd => dd.Quantite * dd.Prix);
+    var montant = demande.DetailDemandes.Sum(dd => dd.Quantite * (dd.Prix ?? 0));
     var maintenant = DateTime.UtcNow;
 
     // Chaque validation renseigne sa date puis fait avancer la demande vers l'étape suivante.
@@ -162,7 +162,7 @@ public class DemandeService : IDemandeService
             demande.DateValidateDirecteur = maintenant;
             var consommeActuel = await _context.DetailDemandes
                 .Where(dd => dd.Demande.CapexId == demande.CapexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
-                .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+                .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             var resteCalcule = demande.Capex.BudgetTotal - consommeActuel;
             if (resteCalcule < montant)
                 throw new BusinessException("Budget restant insuffisant pour valider cette demande.");
@@ -249,6 +249,7 @@ private static StatutDemande RefuserFinance(EfDemande demande, DateTime date)
 private static StatutDemande RefuserDirecteur(EfDemande demande, DateTime date)
 {
     demande.DateValidateDirecteur = date;
+    
     return StatutDemande.RefuseeDirecteur;
 }
 
@@ -266,7 +267,7 @@ private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
         {
             var consomme = await _context.DetailDemandes
                 .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
-                .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+                .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }
         await _context.SaveChangesAsync();

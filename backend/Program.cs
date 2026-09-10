@@ -95,7 +95,7 @@ using (var scope = app.Services.CreateScope())
         {
             var consomme = db.DetailDemandes
                 .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == backend.Models.StatutDemande.BonDeCommande)
-                .Sum(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+                .Sum(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             var reste = c.BudgetTotal - consomme;
             if (c.BudgetRestant != reste) c.BudgetRestant = reste;
         }

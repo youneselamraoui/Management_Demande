@@ -35,7 +35,7 @@ export default function Dashboard({ onNavigate, user }) {
       accepted.forEach((d, i) => {
         const dt = new Date(d.createAt);
         const key = `${dt.getFullYear()}-${dt.getMonth()}`;
-        const total = (details[i] || []).reduce((s, l) => s + l.quantite * l.prix, 0);
+        const total = (details[i] || []).reduce((s, l) => s + l.quantite * (l.prix ?? 0), 0);
         byMonth[key] = (byMonth[key] || 0) + total;
       });
 

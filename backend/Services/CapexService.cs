@@ -31,12 +31,12 @@ public class CapexService : ICapexService
         return result;
     }
 
-    private async Task<decimal> CalculateResteBudgetAsync(int capexId, decimal budgetTotal)
+    private async Task<double> CalculateResteBudgetAsync(int capexId, double budgetTotal)
     {
         var consomme = await _context.DetailDemandes
             .AsNoTracking()
             .Where(dd => dd.Demande.CapexId == capexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
-            .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+            .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
         return budgetTotal - consomme;
     }
 
@@ -47,7 +47,7 @@ public class CapexService : ICapexService
         {
             var consomme = await _context.DetailDemandes
                 .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
-                .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+                .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }
         await _context.SaveChangesAsync();
@@ -84,7 +84,7 @@ public class CapexService : ICapexService
             .Select(g => new ConsommationDepartementDto
             {
                 DepartementNom = g.Key,
-                MontantConsomme = g.Sum(dd => dd.Quantite * dd.Prix)
+                MontantConsomme = g.Sum(dd => dd.Quantite * (dd.Prix ?? 0))
             })
             .OrderByDescending(x => x.MontantConsomme)
             .ToListAsync();
@@ -101,7 +101,7 @@ public class CapexService : ICapexService
         var montantEnAttente = await _context.DetailDemandes
             .AsNoTracking()
             .Where(dd => dd.Demande.CapexId == capexId && statutsEnAttente.Contains(dd.Demande.Statut))
-            .SumAsync(dd => (decimal?)(dd.Quantite * dd.Prix)) ?? 0m;
+            .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
 
         var resteCalcule = await CalculateResteBudgetAsync(capexId, entity.BudgetTotal);
         var stocke = entity.BudgetRestant;
@@ -120,7 +120,7 @@ public class CapexService : ICapexService
         };
     }
 
-    private static Capex MapToModel(EfCapex entity, decimal resteCalcule) => new()
+    private static Capex MapToModel(EfCapex entity, double resteCalcule) => new()
     {
         CapexId = entity.CapexId,
         NomCapex = entity.NomCapex,

@@ -38,7 +38,7 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
         articles: lignes.map((l) => ({
           article: l.article,
           quantite: Number(l.quantite),
-          prix: Number(l.prix),
+          prix: l.prix === "" || l.prix == null ? null : Number(l.prix),
           devis: l.devis || null,
         })),
       });
@@ -196,10 +196,10 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
                     </td>
                     <td className="px-1.5 py-1">
                       <input
-                        required
                         type="number"
                         min="0"
                         step="0.01"
+                        placeholder="— (vide)"
                         value={l.prix}
                         onChange={(e) => updateLigne(i, "prix", e.target.value)}
                         className={inputClass}

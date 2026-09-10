@@ -66,7 +66,7 @@ public class CapexRepository : ICapexRepository
     // Diminue le budget restant — utilisé quand une Demande est validée définitivement.
     // La clause WHERE ResteBudget >= @Montant empêche un budget négatif au niveau SQL,
     // même en cas d'appels concurrents (protection contre les race conditions).
-    public async Task<bool> DecrementerResteBudgetAsync(int capexId, decimal montant)
+    public async Task<bool> DecrementerResteBudgetAsync(int capexId, double montant)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -86,11 +86,11 @@ public class CapexRepository : ICapexRepository
     {
         CapexId = reader.GetInt32(reader.GetOrdinal("CapexId")),
         NomCapex = reader.GetString(reader.GetOrdinal("NomCapex")),
-        BudgetTotal = reader.GetDecimal(reader.GetOrdinal("BudgetTotal")),
-        ResteBudget = reader.GetDecimal(reader.GetOrdinal("ResteBudget"))
+        BudgetTotal = reader.GetDouble(reader.GetOrdinal("BudgetTotal")),
+        ResteBudget = reader.GetDouble(reader.GetOrdinal("ResteBudget"))
     };
     
-    public async Task<List<ConsommationDepartementDto>> GetConsommationParDepartementAsync(int capexId)
+     public async Task<List<ConsommationDepartementDto>> GetConsommationParDepartementAsync(int capexId)
 {
     var result = new List<ConsommationDepartementDto>();
 
@@ -98,7 +98,7 @@ public class CapexRepository : ICapexRepository
     await connection.OpenAsync();
 
     using var command = new SqlCommand(@"
-        SELECT dep.Nom AS DepartementNom, SUM(dd.Quantite * dd.Prix) AS MontantConsomme
+        SELECT dep.Nom AS DepartementNom, SUM(dd.Quantite * ISNULL(dd.Prix,0)) AS MontantConsomme
         FROM Demande d
         INNER JOIN Utilisateur u ON d.UtilisateurId = u.Id
         INNER JOIN Departement dep ON u.DepartementID = dep.Id
@@ -116,20 +116,20 @@ public class CapexRepository : ICapexRepository
         result.Add(new ConsommationDepartementDto
         {
             DepartementNom = reader.GetString(reader.GetOrdinal("DepartementNom")),
-            MontantConsomme = reader.GetDecimal(reader.GetOrdinal("MontantConsomme"))
+            MontantConsomme = reader.IsDBNull(reader.GetOrdinal("MontantConsomme")) ? 0 : reader.GetDouble(reader.GetOrdinal("MontantConsomme"))
         });
     }
 
     return result;
 }
 
-public async Task<decimal> GetMontantEnAttenteAsync(int capexId)
+public async Task<double> GetMontantEnAttenteAsync(int capexId)
 {
     using var connection = _connectionFactory.CreateConnection();
     await connection.OpenAsync();
 
     using var command = new SqlCommand(@"
-        SELECT ISNULL(SUM(dd.Quantite * dd.Prix), 0)
+        SELECT ISNULL(SUM(dd.Quantite * ISNULL(dd.Prix,0)), 0)
         FROM Demande d
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
         WHERE d.CapexId = @CapexId AND d.Statut IN (
@@ -142,7 +142,8 @@ public async Task<decimal> GetMontantEnAttenteAsync(int capexId)
     command.Parameters.AddWithValue("@StatutFinance", StatutDemande.EnAttenteValidationFinance.ToString());
     command.Parameters.AddWithValue("@StatutDirecteur", StatutDemande.EnAttenteValidationDirecteur.ToString());
 
-    return (decimal)(await command.ExecuteScalarAsync())!;
+    var val = await command.ExecuteScalarAsync();
+    return val == null || val == DBNull.Value ? 0 : Convert.ToDouble(val);
 }
 
 }

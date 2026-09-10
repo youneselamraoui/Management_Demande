@@ -59,7 +59,7 @@ public class DetailDemandeRepository : IDetailDemandeRepository
         command.Parameters.AddWithValue("@DemandeId", detail.DemandeId);
         command.Parameters.AddWithValue("@Article", detail.Article);
         command.Parameters.AddWithValue("@Quantite", detail.Quantite);
-        command.Parameters.AddWithValue("@Prix", detail.Prix);
+        command.Parameters.AddWithValue("@Prix", (object?)detail.Prix ?? DBNull.Value);
         command.Parameters.AddWithValue("@Devis", (object?)detail.Devis ?? DBNull.Value);
 
         return (int)(await command.ExecuteScalarAsync())!;
@@ -78,7 +78,7 @@ public class DetailDemandeRepository : IDetailDemandeRepository
         command.Parameters.AddWithValue("@Id", detail.Id);
         command.Parameters.AddWithValue("@Article", detail.Article);
         command.Parameters.AddWithValue("@Quantite", detail.Quantite);
-        command.Parameters.AddWithValue("@Prix", detail.Prix);
+        command.Parameters.AddWithValue("@Prix", (object?)detail.Prix ?? DBNull.Value);
         command.Parameters.AddWithValue("@Devis", (object?)detail.Devis ?? DBNull.Value);
 
         return await command.ExecuteNonQueryAsync() > 0;
@@ -101,7 +101,7 @@ public class DetailDemandeRepository : IDetailDemandeRepository
         DemandeId = reader.GetInt32(reader.GetOrdinal("DemandeId")),
         Article = reader.GetString(reader.GetOrdinal("Article")),
         Quantite = reader.GetInt32(reader.GetOrdinal("Quantite")),
-        Prix = reader.GetDecimal(reader.GetOrdinal("Prix")),
+        Prix = reader.IsDBNull(reader.GetOrdinal("Prix")) ? null : reader.GetDouble(reader.GetOrdinal("Prix")),
         Devis = reader.IsDBNull(reader.GetOrdinal("Devis")) ? null : reader.GetString(reader.GetOrdinal("Devis"))
     };
 }

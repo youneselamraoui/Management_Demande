@@ -287,8 +287,8 @@ export default function DemandesPage({ onNavigate, params, user }) {
               Demande: d.idDemande,
               Article: line.article,
               Quantite: line.quantite,
-              PrixUnitaire: line.prix,
-              SousTotal: line.quantite * line.prix,
+              PrixUnitaire: line.prix ?? "",
+              SousTotal: line.quantite * (line.prix ?? 0),
               Devis: line.devis || "",
             }));
           } else if (Array.isArray(det) && !det.length) {
@@ -804,7 +804,7 @@ function DemandeDetails({ demande, details, onValider, onRefuser }) {
   if (!details) return <p className="text-sm text-muted-foreground">Chargement des articles...</p>;
   if (details.error) return <p className="text-sm text-destructive">{details.error}</p>;
 
-  const total = details.reduce((sum, d) => sum + d.quantite * d.prix, 0);
+  const total = details.reduce((sum, d) => sum + d.quantite * (d.prix ?? 0), 0);
 
     return (
     <div>
@@ -831,8 +831,8 @@ function DemandeDetails({ demande, details, onValider, onRefuser }) {
           <tr key={line.id} className="border-t border-border">
             <td className="px-2 py-1.5">{line.article}</td>
             <td className="px-2 py-1.5">{line.quantite}</td>
-            <td className="px-2 py-1.5">{line.prix.toLocaleString("fr-FR")} $</td>
-            <td className="px-2 py-1.5">{(line.quantite * line.prix).toLocaleString("fr-FR")} $</td>
+            <td className="px-2 py-1.5">{line.prix != null ? line.prix.toLocaleString("fr-FR") + " $" : "—"}</td>
+            <td className="px-2 py-1.5">{((line.quantite * (line.prix ?? 0)).toLocaleString("fr-FR"))} $</td>
             <td className="px-2 py-1.5">{line.devis || "—"}</td>
           </tr>
         ))}

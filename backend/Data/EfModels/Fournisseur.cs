@@ -8,6 +8,6 @@ namespace backend.Data.EfModels;
 public class Fournisseur
 {
     [Key] public int Id { get; set; }
-    [StringLength(200)] public string Nom { get; set; } = null!;
+    [Column(TypeName = "nvarchar(max)")] public string Nom { get; set; } = null!;
     public virtual ICollection<BonCommande> BonCommandes { get; set; } = new List<BonCommande>();
 }

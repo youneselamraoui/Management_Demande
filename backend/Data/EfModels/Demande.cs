@@ -20,15 +20,14 @@ public partial class Demande
 
     public int UtilisateurId { get; set; }
 
-    [StringLength(50)]
+    [Column(TypeName = "nvarchar(max)")]
     public StatutDemande Statut { get; set; }
     public int CapexId { get; set; }
 
-    [Column("RFX")]
-    [StringLength(50)]
+    [Column("RFX", TypeName = "nvarchar(max)")]
     public string? RFX { get; set; }
 
-    // Compat RFx
+    // Compat RFx -> RFX (majuscule)
     [NotMapped]
     public string? Rfx { get => RFX; set => RFX = value; }
 
