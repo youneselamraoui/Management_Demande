@@ -86,7 +86,8 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const incoherents = filtered.filter((b) => {
     const st = b.statutDemande ?? b.StatutDemande ?? "";
-    return st && st !== "BonDeCommande";
+    const n = String(st).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return st && n !== "bon de commande" && n !== "bondecommande";
   });
 
   async function handleExport() {
@@ -239,7 +240,8 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
                 ) : (
                   pageItems.map((b) => {
                     const statut = b.statutDemande ?? b.StatutDemande ?? "";
-                    const isIncoherent = statut && statut !== "BonDeCommande";
+                    const n = String(statut).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const isIncoherent = statut && n !== "bon de commande" && n !== "bondecommande";
                     const demandeId = b.demandeId ?? b.DemandeId;
                     const expanded = expandedId === demandeId;
                     const details = detailsCache[demandeId];

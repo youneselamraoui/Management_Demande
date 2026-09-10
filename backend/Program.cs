@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 
 // --- EF Core : SQL Server uniquement ---
 var cs = builder.Configuration.GetConnectionString("DefaultConnection")!;
-builder.Services.AddDbContext<ProjetDbContext>(options => options.UseSqlServer(cs));
+builder.Services.AddDbContext<ProjetDbContext>(options => options.UseSqlServer(cs).LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information));
 Console.WriteLine($"[DB] SQL Server : {cs}");
 
 builder.Services.AddScoped<IDepartementService, DepartementService>();
@@ -57,6 +57,7 @@ IF OBJECT_ID('DetailDemande') IS NOT NULL AND OBJECT_ID('DetailsDemandes') IS NU
 IF OBJECT_ID('Departement') IS NOT NULL AND OBJECT_ID('Departements') IS NULL EXEC sp_rename 'Departement', 'Departements';
 IF OBJECT_ID('Utilisateur') IS NOT NULL AND OBJECT_ID('Utilisateurs') IS NULL EXEC sp_rename 'Utilisateur', 'Utilisateurs';
 IF COL_LENGTH('Demandes','idDemande') IS NOT NULL AND COL_LENGTH('Demandes','Id') IS NULL EXEC sp_rename 'Demandes.idDemande', 'Id', 'COLUMN';
+IF COL_LENGTH('Capexes','CapexId') IS NOT NULL AND COL_LENGTH('Capexes','Id') IS NULL EXEC sp_rename 'Capexes.CapexId', 'Id', 'COLUMN';
 IF COL_LENGTH('Demandes','RFx') IS NOT NULL AND COL_LENGTH('Demandes','RFX') IS NULL EXEC sp_rename 'Demandes.RFx', 'RFX', 'COLUMN';
 IF COL_LENGTH('Demandes','CreateAt') IS NOT NULL AND COL_LENGTH('Demandes','CreatedAt') IS NULL EXEC sp_rename 'Demandes.CreateAt', 'CreatedAt', 'COLUMN';
 IF COL_LENGTH('Demandes','DateValidation1') IS NOT NULL AND COL_LENGTH('Demandes','DateValidationAchat1') IS NULL EXEC sp_rename 'Demandes.DateValidation1', 'DateValidationAchat1', 'COLUMN';
@@ -71,6 +72,19 @@ UPDATE Demandes SET Statut='EnAttenteValidationDirecteur' WHERE Statut='Validati
 UPDATE Demandes SET Statut='BonDeCommande' WHERE Statut='Acceptee';
 UPDATE Demandes SET Statut='RefuseeAchat1' WHERE Statut='Rejetee' AND DateValidationAchat1 IS NULL;
 UPDATE Demandes SET Statut='RefuseeAchat2' WHERE Statut='Rejetee' AND DateValidationAchat1 IS NOT NULL AND DateValidationAchat2 IS NULL;
+-- Normalisation vers affichage avec accents (nouveau référentiel 9 valeurs)
+UPDATE Demandes SET Statut='En attente validation achat1' WHERE Statut='EnAttenteValidationAchat1';
+UPDATE Demandes SET Statut='En attente validation achat2' WHERE Statut='EnAttenteValidationAchat2';
+UPDATE Demandes SET Statut='En attente validation chef' WHERE Statut='EnAttenteValidationChef';
+UPDATE Demandes SET Statut='En attente confirmation finance' WHERE Statut IN ('EnAttenteValidationFinance','En attente validation finance','EnAttenteConfirmationFinance');
+UPDATE Demandes SET Statut='En attente validation directeur' WHERE Statut='EnAttenteValidationDirecteur';
+UPDATE Demandes SET Statut='Bon de commande' WHERE Statut IN ('BonDeCommande','Bon commande');
+UPDATE Demandes SET Statut='Refusé achat2' WHERE Statut IN ('RefuseeAchat2','Refusée achat2');
+UPDATE Demandes SET Statut='Refusé finance' WHERE Statut IN ('RefuseeFinance','Refusée finance');
+UPDATE Demandes SET Statut='Refusé directeur' WHERE Statut IN ('RefuseeDirecteur','Refusée directeur');
+-- Garder Refusé achat1 / Refusé chef pour compat mais non proposés en filtre
+UPDATE Demandes SET Statut='Refusé achat1' WHERE Statut='RefuseeAchat1';
+UPDATE Demandes SET Statut='Refusé chef' WHERE Statut='RefuseeChef';
 ";
         try { db.Database.ExecuteSqlRaw(renameSql); Console.WriteLine("[DB] Renommage verifie"); } catch (Exception ex) { Console.WriteLine($"[DB] Rename warning: {ex.Message}"); }
     } catch (Exception ex) { Console.WriteLine($"[DB] Rename outer: {ex.Message}"); }
@@ -94,7 +108,7 @@ using (var scope = app.Services.CreateScope())
         foreach (var c in capexes)
         {
             var consomme = db.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == backend.Models.StatutDemande.BonDeCommande)
+                .Where(dd => dd.Demande.CapexId == c.Id && dd.Demande.Statut == backend.Models.StatutDemande.BonDeCommande)
                 .Sum(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             var reste = c.BudgetTotal - consomme;
             if (c.BudgetRestant != reste) c.BudgetRestant = reste;

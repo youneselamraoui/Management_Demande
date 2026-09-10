@@ -32,7 +32,7 @@ public partial class ProjetDbContext : DbContext
     {
         modelBuilder.Entity<Capex>(entity =>
         {
-            entity.HasKey(e => e.CapexId).HasName("PK__Capex__120BD429C6355FB6");
+            entity.HasKey(e => e.Id).HasName("PK__Capex__120BD429C6355FB6");
             entity.ToTable("Capexes");
         });
 
@@ -44,7 +44,9 @@ public partial class ProjetDbContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
 
             entity.Property(e => e.Statut)
-                .HasConversion<string>()
+                .HasConversion(
+                    v => v.ToDisplay(),
+                    v => StatutDemandeExtensions.ParseStatut(v))
                 .HasColumnType("nvarchar(max)");
 
             entity.HasOne(d => d.Capex).WithMany(p => p.Demandes)

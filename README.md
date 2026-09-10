@@ -231,8 +231,8 @@ dotnet dev-certs https --trust
 Contexte : `backend/Data/ProjetDbContext.cs:8` — `ProjetDbContext`
 
 Entités (`backend/Data/EfModels/`) :
-- `Capex` (`CapexId`, `NomCapex`, `BudgetTotal`, `ResteBudget`)
-- `Demande` (`IdDemande`, `UtilisateurId`, `CapexId`, `Statut`, `Rfx`, `CreateAt`, dates de validation)
+- `Capex` (`Id`, `NomCapex`, `BudgetTotal`, `ResteBudget`)
+- `Demande` (`IdDemande`, `UtilisateurId`, `Id`, `Statut`, `Rfx`, `CreateAt`, dates de validation)
 - `DetailDemande` (`Id`, `DemandeId`, ...)
 - `Departement` (`Id`, ...)
 - `Utilisateur` (`Id`, `DepartementId`, ...)

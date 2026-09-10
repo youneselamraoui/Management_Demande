@@ -24,50 +24,50 @@ function getDeptConfig(name, index = 0) {
 
 export default function SuiviCapex({ onNavigate, params, user }) {
   const [capexList, setCapexList] = useState([]);
-  const [selectedCapexId, setSelectedCapexId] = useState("");
+  const [selectedId, setSelectedId] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const svgRef = useRef(null);
 
-  function resolveCapexId(list, p) {
+  function resolveId(list, p) {
     if (!list.length) return "";
-    if (p?.capexId != null && p.capexId !== "") {
-      const byId = list.find((c) => String(c.capexId) === String(p.capexId));
-      if (byId) return byId.capexId;
+    if (p?.Id != null && p.Id !== "") {
+      const byId = list.find((c) => String(c.Id) === String(p.Id));
+      if (byId) return byId.Id;
     }
     if (p?.capexNom) {
       const byNom = list.find((c) => String(c.nomCapex).toLowerCase() === String(p.capexNom).toLowerCase());
-      if (byNom) return byNom.capexId;
+      if (byNom) return byNom.Id;
     }
-    return list[0].capexId;
+    return list[0].Id;
   }
 
   useEffect(() => {
     getCapex()
       .then((list) => {
         setCapexList(list);
-        if (list.length > 0) setSelectedCapexId(resolveCapexId(list, params));
+        if (list.length > 0) setSelectedId(resolveId(list, params));
       })
       .catch((e) => setError(e.message));
   }, []);
 
   useEffect(() => {
     if (!capexList.length || !params) return;
-    const resolved = resolveCapexId(capexList, params);
-    if (resolved && String(resolved) !== String(selectedCapexId)) {
-      setSelectedCapexId(resolved);
+    const resolved = resolveId(capexList, params);
+    if (resolved && String(resolved) !== String(selectedId)) {
+      setSelectedId(resolved);
     }
-  }, [params?.capexId, params?.capexNom]);
+  }, [params?.Id, params?.capexNom]);
 
   useEffect(() => {
-    if (!selectedCapexId) return;
+    if (!selectedId) return;
     setLoading(true);
-    getConsommationCapex(selectedCapexId)
+    getConsommationCapex(selectedId)
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [selectedCapexId]);
+  }, [selectedId]);
 
   if (error) {
     return (
@@ -121,12 +121,12 @@ export default function SuiviCapex({ onNavigate, params, user }) {
           <div className="flex items-center gap-2 rounded-lg border border-border px-3.5 py-2.5 text-sm font-medium">
             <Layers className="size-4 text-muted-foreground" />
             <select
-              value={selectedCapexId}
-              onChange={(e) => setSelectedCapexId(e.target.value)}
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
               className="bg-transparent outline-none"
             >
               {capexList.map((c) => (
-                <option key={c.capexId} value={c.capexId}>{c.nomCapex}</option>
+                <option key={c.Id} value={c.Id}>{c.nomCapex}</option>
               ))}
             </select>
           </div>

@@ -26,12 +26,10 @@ const STATUTS = [
   "EnAttenteValidationAchat1",
   "EnAttenteValidationAchat2",
   "EnAttenteValidationChef",
-  "EnAttenteValidationFinance",
+  "EnAttenteConfirmationFinance",
   "EnAttenteValidationDirecteur",
   "BonDeCommande",
-  "RefuseeAchat1",
   "RefuseeAchat2",
-  "RefuseeChef",
   "RefuseeFinance",
   "RefuseeDirecteur",
 ];
@@ -40,13 +38,14 @@ const STATUT_LABELS = {
   EnAttenteValidationAchat2: "En attente validation achat2",
   EnAttenteValidationChef: "En attente validation chef",
   EnAttenteValidationFinance: "En attente validation finance",
+  EnAttenteConfirmationFinance: "En attente confirmation finance",
   EnAttenteValidationDirecteur: "En attente validation directeur",
   BonDeCommande: "Bon de commande",
-  RefuseeAchat1: "Refusée achat1",
-  RefuseeAchat2: "Refusée achat2",
-  RefuseeChef: "Refusée chef",
-  RefuseeFinance: "Refusée finance",
-  RefuseeDirecteur: "Refusée directeur",
+  RefuseeAchat1: "Refusé achat1",
+  RefuseeAchat2: "Refusé achat2",
+  RefuseeChef: "Refusé chef",
+  RefuseeFinance: "Refusé finance",
+  RefuseeDirecteur: "Refusé directeur",
 };
 
 const DEFAULT_FILTERS = {
@@ -196,8 +195,14 @@ export default function DemandesPage({ onNavigate, params, user }) {
 
   const filtered = demandes
     .filter((d) => {
-      if (filters.statut === "Tous") return !String(d.statut).startsWith("Refusee");
-      return d.statut === filters.statut;
+      const s = String(d.statut || "");
+      const norm = s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const isRefuse = norm.includes("refus");
+      if (filters.statut === "Tous") return !isRefuse;
+      // comparer en normalisé pour gérer "BonDeCommande" vs "Bon de commande" vs "En attente confirmation finance"
+      const fNorm = String(filters.statut).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+      const dNorm = norm.replace(/\s+/g, "");
+      return dNorm === fNorm || s === filters.statut;
     })
     .filter((d) => filters.demandeur === "Tous" || d.utilisateurNom === filters.demandeur)
     .filter((d) => filters.capex === "Tous" || d.capexNom === filters.capex)
@@ -233,9 +238,18 @@ export default function DemandesPage({ onNavigate, params, user }) {
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const now = new Date();
+  function isEnAttente(s) {
+    if (!s) return false;
+    const n = String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return n.includes("en attente") && !n.includes("refus");
+  }
+  function isBonDeCommande(s) {
+    const n = String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return n === "bon de commande" || n === "bondecommande";
+  }
   const stats = {
     total: demandes.length,
-    enAttente: demandes.filter((d) => d.statut?.startsWith("EnAttenteValidation")).length,
+    enAttente: demandes.filter((d) => isEnAttente(d.statut)).length,
     ceMois: demandes.filter((d) => {
       const dt = new Date(d.createAt);
       return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
@@ -737,8 +751,8 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
           <button
             onClick={(e) => {
               e.stopPropagation();
-              const capexId = demande.capexId ?? demande.idCapex ?? demande.CapexId ?? null;
-              onNavigate?.("suivi", { capexNom: demande.capexNom, capexId });
+              const Id = demande.Id ?? demande.idCapex ?? demande.Id ?? null;
+              onNavigate?.("suivi", { capexNom: demande.capexNom, Id });
             }}
             className={compact ? "flex max-w-full cursor-pointer items-center gap-1 overflow-hidden text-muted-foreground hover:text-primary hover:underline underline-offset-2" : "flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-primary hover:underline underline-offset-2"}
             title={`Voir suivi ${demande.capexNom}`}

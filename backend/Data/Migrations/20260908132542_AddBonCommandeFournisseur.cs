@@ -134,9 +134,9 @@ namespace backend.Data.Migrations
                 newName: "IX_Demande_UtilisateurId");
 
             migrationBuilder.RenameIndex(
-                name: "IX_Demandes_CapexId",
+                name: "IX_Demandes_Id",
                 table: "Demande",
-                newName: "IX_Demande_CapexId");
+                newName: "IX_Demande_Id");
 
             migrationBuilder.RenameColumn(
                 name: "BudgetRestant",

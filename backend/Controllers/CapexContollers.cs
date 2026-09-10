@@ -25,7 +25,7 @@ public class CapexController : ControllerBase
     public async Task<IActionResult> Create(CreateCapexDto dto)
     {
         var capex = await _service.CreateCapexAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = capex.CapexId }, capex);
+        return CreatedAtAction(nameof(GetById), new { id = capex.Id }, capex);
     }
 
     [HttpGet("{id}/consommation-departements")]

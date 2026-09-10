@@ -7,7 +7,7 @@ const EMPTY_LIGNE = { article: "", quantite: 1, prix: "", devis: "" };
 export default function CreateDemandeModal({ onClose, onCreated }) {
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [capexList, setCapexList] = useState([]);
-  const [form, setForm] = useState({ utilisateurId: "", capexId: "", rFx: "" });
+  const [form, setForm] = useState({ utilisateurId: "", Id: "", rFx: "" });
   const [lignes, setLignes] = useState([{ ...EMPTY_LIGNE }]);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +33,7 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
     try {
       const created = await createDemande({
         utilisateurId: Number(form.utilisateurId),
-        capexId: Number(form.capexId),
+        Id: Number(form.Id),
         rFx: form.rFx || null,
         articles: lignes.map((l) => ({
           article: l.article,
@@ -113,11 +113,11 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
               <select
                 required
                 className={selectClass}
-                value={form.capexId}
-                onChange={(e) => setForm({ ...form, capexId: e.target.value })}
+                value={form.Id}
+                onChange={(e) => setForm({ ...form, Id: e.target.value })}
               >
                 <option value="" disabled>Sélectionner</option>
-                {capexList.map((c) => <option key={c.capexId} value={c.capexId}>{c.nomCapex}</option>)}
+                {capexList.map((c) => <option key={c.Id} value={c.Id}>{c.nomCapex}</option>)}
               </select>
             </div>
 

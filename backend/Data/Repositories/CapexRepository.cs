@@ -13,14 +13,14 @@ public class CapexRepository : ICapexRepository
         => _connectionFactory = connectionFactory;
 
     private const string BaseSelect =
-        "SELECT CapexId, NomCapex, BudgetTotal, ResteBudget FROM Capex";
+        "SELECT Id, NomCapex, BudgetTotal, ResteBudget FROM Capex";
 
     public async Task<Capex?> GetByIdAsync(int id)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
 
-        using var command = new SqlCommand($"{BaseSelect} WHERE CapexId = @Id", connection);
+        using var command = new SqlCommand($"{BaseSelect} WHERE Id = @Id", connection);
         command.Parameters.AddWithValue("@Id", id);
 
         using var reader = await command.ExecuteReaderAsync();
@@ -66,7 +66,7 @@ public class CapexRepository : ICapexRepository
     // Diminue le budget restant — utilisé quand une Demande est validée définitivement.
     // La clause WHERE ResteBudget >= @Montant empêche un budget négatif au niveau SQL,
     // même en cas d'appels concurrents (protection contre les race conditions).
-    public async Task<bool> DecrementerResteBudgetAsync(int capexId, double montant)
+    public async Task<bool> DecrementerResteBudgetAsync(int Id, double montant)
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
@@ -74,9 +74,9 @@ public class CapexRepository : ICapexRepository
         using var command = new SqlCommand(@"
             UPDATE Capex
             SET ResteBudget = ResteBudget - @Montant
-            WHERE CapexId = @CapexId AND ResteBudget >= @Montant", connection);
+            WHERE Id = @Id AND ResteBudget >= @Montant", connection);
 
-        command.Parameters.AddWithValue("@CapexId", capexId);
+        command.Parameters.AddWithValue("@Id", Id);
         command.Parameters.AddWithValue("@Montant", montant);
 
         return await command.ExecuteNonQueryAsync() > 0; // false = budget insuffisant
@@ -84,13 +84,13 @@ public class CapexRepository : ICapexRepository
 
     private static Capex MapToCapex(SqlDataReader reader) => new()
     {
-        CapexId = reader.GetInt32(reader.GetOrdinal("CapexId")),
+        Id = reader.GetInt32(reader.GetOrdinal("Id")),
         NomCapex = reader.GetString(reader.GetOrdinal("NomCapex")),
         BudgetTotal = reader.GetDouble(reader.GetOrdinal("BudgetTotal")),
         ResteBudget = reader.GetDouble(reader.GetOrdinal("ResteBudget"))
     };
     
-     public async Task<List<ConsommationDepartementDto>> GetConsommationParDepartementAsync(int capexId)
+     public async Task<List<ConsommationDepartementDto>> GetConsommationParDepartementAsync(int Id)
 {
     var result = new List<ConsommationDepartementDto>();
 
@@ -103,11 +103,11 @@ public class CapexRepository : ICapexRepository
         INNER JOIN Utilisateur u ON d.UtilisateurId = u.Id
         INNER JOIN Departement dep ON u.DepartementID = dep.Id
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
-        WHERE d.CapexId = @CapexId AND d.Statut = @Statut
+        WHERE d.Id = @Id AND d.Statut = @Statut
         GROUP BY dep.Nom
         ORDER BY MontantConsomme DESC", connection);
 
-    command.Parameters.AddWithValue("@CapexId", capexId);
+    command.Parameters.AddWithValue("@Id", Id);
     command.Parameters.AddWithValue("@Statut", StatutDemande.BonDeCommande.ToString());
     
     using var reader = await command.ExecuteReaderAsync();
@@ -123,7 +123,7 @@ public class CapexRepository : ICapexRepository
     return result;
 }
 
-public async Task<double> GetMontantEnAttenteAsync(int capexId)
+public async Task<double> GetMontantEnAttenteAsync(int Id)
 {
     using var connection = _connectionFactory.CreateConnection();
     await connection.OpenAsync();
@@ -132,10 +132,10 @@ public async Task<double> GetMontantEnAttenteAsync(int capexId)
         SELECT ISNULL(SUM(dd.Quantite * ISNULL(dd.Prix,0)), 0)
         FROM Demande d
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
-        WHERE d.CapexId = @CapexId AND d.Statut IN (
+        WHERE d.Id = @Id AND d.Statut IN (
             @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutDirecteur)", connection);
 
-    command.Parameters.AddWithValue("@CapexId", capexId);
+    command.Parameters.AddWithValue("@Id", Id);
     command.Parameters.AddWithValue("@StatutAchat1", StatutDemande.EnAttenteValidationAchat1.ToString());
     command.Parameters.AddWithValue("@StatutAchat2", StatutDemande.EnAttenteValidationAchat2.ToString());
     command.Parameters.AddWithValue("@StatutChef", StatutDemande.EnAttenteValidationChef.ToString());

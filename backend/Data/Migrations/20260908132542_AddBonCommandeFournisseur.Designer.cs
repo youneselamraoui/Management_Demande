@@ -57,11 +57,11 @@ namespace backend.Data.Migrations
 
             modelBuilder.Entity("backend.Data.EfModels.Capex", b =>
                 {
-                    b.Property<int>("CapexId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CapexId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("BudgetRestant")
                         .HasColumnType("decimal(18, 2)")
@@ -75,7 +75,7 @@ namespace backend.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.HasKey("CapexId")
+                    b.HasKey("Id")
                         .HasName("PK__Capex__120BD429C6355FB6");
 
                     b.ToTable("Capexes", (string)null);
@@ -90,7 +90,7 @@ namespace backend.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CapexId")
+                    b.Property<int>("Id")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
@@ -130,7 +130,7 @@ namespace backend.Data.Migrations
                     b.HasKey("Id")
                         .HasName("PK__Demande__8CE9A8CAB33538E6");
 
-                    b.HasIndex("CapexId");
+                    b.HasIndex("Id");
 
                     b.HasIndex("UtilisateurId");
 
@@ -262,7 +262,7 @@ namespace backend.Data.Migrations
                 {
                     b.HasOne("backend.Data.EfModels.Capex", "Capex")
                         .WithMany("Demandes")
-                        .HasForeignKey("CapexId")
+                        .HasForeignKey("Id")
                         .IsRequired()
                         .HasConstraintName("FK_Demande_Capex");
 

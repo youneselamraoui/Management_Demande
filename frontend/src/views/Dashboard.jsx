@@ -25,10 +25,14 @@ export default function Dashboard({ onNavigate, user }) {
       const [capexes, dem] = await Promise.all([getCapex(), getDemandes()]);
       setDemandes(dem);
 
-      const consos = await Promise.all(capexes.map((c) => getConsommationCapex(c.capexId)));
+      const consos = await Promise.all(capexes.map((c) => getConsommationCapex(c.Id)));
       setConsoByCapex(consos);
 
-      const accepted = dem.filter((d) => d.statut === "BonDeCommande");
+      const isBon = (s) => {
+        const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return n === "bon de commande" || n === "bondecommande";
+      };
+      const accepted = dem.filter((d) => isBon(d.statut));
       const details = await Promise.all(accepted.map((d) => getDetailsDemande(d.idDemande).catch(() => [])));
 
       const byMonth = {};
@@ -74,7 +78,11 @@ export default function Dashboard({ onNavigate, user }) {
     0
   );
   const resteBudget = budgetTotal - totalConsomme;
-  const enAttenteCount = demandes.filter((d) => d.statut?.startsWith("EnAttenteValidation")).length;
+  const isEnAttente = (s) => {
+    const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return n.includes("en attente") && !n.includes("refus");
+  };
+  const enAttenteCount = demandes.filter((d) => isEnAttente(d.statut)).length;
   const pctRestant = budgetTotal > 0 ? (resteBudget / budgetTotal) * 100 : 0;
 
   const consommeTrend =

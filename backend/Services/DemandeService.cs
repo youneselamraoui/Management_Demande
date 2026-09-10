@@ -45,9 +45,9 @@ public class DemandeService : IDemandeService
 
         var capex = await _context.Capexes
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.CapexId == dto.CapexId);
+            .FirstOrDefaultAsync(c => c.Id == dto.Id);
         if (capex is null)
-            throw new BusinessException($"Le Capex {dto.CapexId} n'existe pas.");
+            throw new BusinessException($"Le Capex {dto.Id} n'existe pas.");
 
         if (dto.Articles is null || dto.Articles.Count == 0)
             throw new BusinessException("Une demande doit contenir au moins un article.");
@@ -65,7 +65,7 @@ public class DemandeService : IDemandeService
         var entity = new EfDemande
         {
             UtilisateurId = dto.UtilisateurId,
-            CapexId = dto.CapexId,
+            Id = dto.Id,
             RFX = dto.RFX,
             Statut = StatutDemande.EnAttenteValidationAchat1,
             CreatedAt = DateTime.UtcNow
@@ -155,6 +155,7 @@ public class DemandeService : IDemandeService
             demande.Statut = StatutDemande.EnAttenteValidationFinance;
             break;
         case StatutDemande.EnAttenteValidationFinance:
+        case StatutDemande.EnAttenteConfirmationFinance:
             demande.DateValidateFinance = maintenant;
             demande.Statut = StatutDemande.EnAttenteValidationDirecteur;
             break;
@@ -214,6 +215,7 @@ public async Task<Demande> RefuserDemandeAsync(int id)
         StatutDemande.EnAttenteValidationAchat2 => RefuserAchat2(demande, maintenant),
         StatutDemande.EnAttenteValidationChef => RefuserChef(demande, maintenant),
         StatutDemande.EnAttenteValidationFinance => RefuserFinance(demande, maintenant),
+        StatutDemande.EnAttenteConfirmationFinance => RefuserFinance(demande, maintenant),
         StatutDemande.EnAttenteValidationDirecteur => RefuserDirecteur(demande, maintenant),
         _ => throw new BusinessException("Statut non géré pour le refus.")
     };
@@ -266,7 +268,7 @@ private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
         foreach (var c in capexes)
         {
             var consomme = await _context.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == c.CapexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
+                .Where(dd => dd.Demande.CapexId == c.Id && dd.Demande.Statut == StatutDemande.BonDeCommande)
                 .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }

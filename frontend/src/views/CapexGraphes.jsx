@@ -17,7 +17,7 @@ const COLORS = [
 
 function CapexGraphes() {
   const [capexList, setCapexList] = useState([]);
-  const [selectedCapexId, setSelectedCapexId] = useState("");
+  const [selectedId, setSelectedId] = useState("");
   const [consommation, setConsommation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,20 +26,20 @@ function CapexGraphes() {
     getCapex()
       .then((list) => {
         setCapexList(list);
-        if (list.length > 0) setSelectedCapexId(list[0].capexId);
+        if (list.length > 0) setSelectedId(list[0].Id);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (!selectedCapexId) return;
+    if (!selectedId) return;
     setLoading(true);
-    getConsommationCapex(selectedCapexId)
+    getConsommationCapex(selectedId)
       .then(setConsommation)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [selectedCapexId]);
+  }, [selectedId]);
 
   if (error) {
     return (
@@ -79,11 +79,11 @@ const resteBudget = budgetTotal - totalConsomme;
             <Form.Group>
               <Form.Label>Capex</Form.Label>
               <Form.Select
-                value={selectedCapexId}
-                onChange={(e) => setSelectedCapexId(e.target.value)}
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
               >
                 {capexList.map((c) => (
-                  <option key={c.capexId} value={c.capexId}>
+                  <option key={c.Id} value={c.Id}>
                     {c.nomCapex}
                   </option>
                 ))}

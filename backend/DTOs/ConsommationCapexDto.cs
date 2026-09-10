@@ -10,7 +10,7 @@ public class ConsommationDepartementDto
 
 public class ConsommationCapexDto
 {
-    public int CapexId { get; set; }
+    public int Id { get; set; }
     public string NomCapex { get; set; } = string.Empty;
     public double BudgetTotal { get; set; }
     public double BudgetRestant { get; set; }

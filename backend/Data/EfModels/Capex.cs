@@ -10,7 +10,11 @@ namespace backend.Data.EfModels;
 public partial class Capex
 {
     [Key]
-    public int CapexId { get; set; }
+    [Column("Id")]
+    public int Id { get; set; }
+
+    [NotMapped]
+    public int CapexId { get => Id; set => Id = value; }
 
     [Column(TypeName = "nvarchar(max)")]
     public string NomCapex { get; set; } = null!;

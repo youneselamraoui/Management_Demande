@@ -11,11 +11,11 @@ public class DemandeRepository : IDemandeRepository
 
     private const string BaseSelect = @"
         SELECT d.idDemande, d.UtilisateurId, u.Nom AS UtilisateurNom, d.Statut,
-               d.CapexId, c.NomCapex AS CapexNom, d.RFx, d.CreateAt,
+               d.Id, c.NomCapex AS CapexNom, d.RFx, d.CreateAt,
                d.DateValidateChef, d.DateValidateFinance, d.DateValidateDirecteur
         FROM Demande d
         INNER JOIN Utilisateur u ON d.UtilisateurId = u.Id
-        INNER JOIN Capex c ON d.CapexId = c.CapexId";
+        INNER JOIN Capex c ON d.Id = c.Id";
 
     public async Task<Demande?> GetByIdAsync(int id)
     {
@@ -52,13 +52,13 @@ public class DemandeRepository : IDemandeRepository
         await connection.OpenAsync();
 
         using var command = new SqlCommand(@"
-            INSERT INTO Demande (UtilisateurId, Statut, CapexId, RFx, CreateAt)
-            VALUES (@UtilisateurId, @Statut, @CapexId, @RFx, @CreateAt);
+            INSERT INTO Demande (UtilisateurId, Statut, Id, RFx, CreateAt)
+            VALUES (@UtilisateurId, @Statut, @Id, @RFx, @CreateAt);
             SELECT CAST(SCOPE_IDENTITY() AS int);", connection);
 
         command.Parameters.AddWithValue("@UtilisateurId", demande.UtilisateurId);
         command.Parameters.AddWithValue("@Statut", demande.Statut.ToString());
-        command.Parameters.AddWithValue("@CapexId", demande.CapexId);
+        command.Parameters.AddWithValue("@Id", demande.Id);
         command.Parameters.AddWithValue("@RFx", (object?)demande.RFx ?? DBNull.Value);
         command.Parameters.AddWithValue("@CreateAt", DateTime.UtcNow);
 
@@ -71,7 +71,7 @@ public class DemandeRepository : IDemandeRepository
         UtilisateurId = reader.GetInt32(reader.GetOrdinal("UtilisateurId")),
         UtilisateurNom = reader.GetString(reader.GetOrdinal("UtilisateurNom")),
         Statut = Enum.Parse<StatutDemande>(reader.GetString(reader.GetOrdinal("Statut"))),
-        CapexId = reader.GetInt32(reader.GetOrdinal("CapexId")),
+        Id = reader.GetInt32(reader.GetOrdinal("Id")),
         CapexNom = reader.GetString(reader.GetOrdinal("CapexNom")),
         RFx = reader.IsDBNull(reader.GetOrdinal("RFx")) ? null : reader.GetString(reader.GetOrdinal("RFx")),
         CreateAt = reader.GetDateTime(reader.GetOrdinal("CreateAt")),
@@ -88,13 +88,13 @@ public async Task<int> AddWithDetailsAsync(Demande demande, List<DetailDemande> 
     try
     {
         using var demandeCmd = new SqlCommand(@"
-            INSERT INTO Demande (UtilisateurId, Statut, CapexId, RFx, CreateAt)
-            VALUES (@UtilisateurId, @Statut, @CapexId, @RFx, @CreateAt);
+            INSERT INTO Demande (UtilisateurId, Statut, Id, RFx, CreateAt)
+            VALUES (@UtilisateurId, @Statut, @Id, @RFx, @CreateAt);
             SELECT CAST(SCOPE_IDENTITY() AS int);", connection, transaction);
 
         demandeCmd.Parameters.AddWithValue("@UtilisateurId", demande.UtilisateurId);
         demandeCmd.Parameters.AddWithValue("@Statut", demande.Statut.ToString());
-        demandeCmd.Parameters.AddWithValue("@CapexId", demande.CapexId);
+        demandeCmd.Parameters.AddWithValue("@Id", demande.Id);
         demandeCmd.Parameters.AddWithValue("@RFx", (object?)demande.RFx ?? DBNull.Value);
         demandeCmd.Parameters.AddWithValue("@CreateAt", DateTime.UtcNow);
 
