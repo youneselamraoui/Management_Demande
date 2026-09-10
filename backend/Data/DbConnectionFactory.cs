@@ -1,4 +1,3 @@
-// Data/DbConnectionFactory.cs
 using Microsoft.Data.SqlClient;
 
 namespace backend.Data;

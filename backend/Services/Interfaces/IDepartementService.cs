@@ -1,4 +1,3 @@
-// Services/Interfaces/IDepartementService.cs
 using backend.Models;
 
 namespace backend.Services.Interfaces;

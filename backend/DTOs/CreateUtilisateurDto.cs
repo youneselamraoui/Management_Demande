@@ -1,4 +1,3 @@
-// DTOs/CreateUtilisateurDto.cs
 namespace backend.DTOs;
 
 public class CreateUtilisateurDto

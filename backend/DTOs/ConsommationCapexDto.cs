@@ -1,4 +1,3 @@
-// DTOs/ConsommationCapexDto.cs
 namespace backend.DTOs;
 using System.Text.Json.Serialization;
 

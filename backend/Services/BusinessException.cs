@@ -1,4 +1,3 @@
-// Services/BusinessException.cs
 namespace backend.Services;
 
 public class BusinessException : Exception

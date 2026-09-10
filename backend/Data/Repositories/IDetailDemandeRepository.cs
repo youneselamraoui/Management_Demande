@@ -1,4 +1,3 @@
-// Data/Repositories/IDepartementRepository.cs
 using backend.Models;
 
 namespace backend.Data.Repositories;

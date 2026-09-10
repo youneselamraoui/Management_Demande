@@ -1,4 +1,3 @@
-// Controllers/UtilisateursController.cs
 using Microsoft.AspNetCore.Mvc;
 using backend.DTOs;
 using backend.Services;

@@ -1,4 +1,3 @@
-// Data/Repositories/DepartementRepository.cs
 using Microsoft.Data.SqlClient;
 using backend.Models;
 

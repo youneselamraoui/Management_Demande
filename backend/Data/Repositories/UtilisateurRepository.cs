@@ -1,4 +1,3 @@
-// Data/Repositories/UtilisateurRepository.cs
 using Microsoft.Data.SqlClient;
 using backend.Models;
 

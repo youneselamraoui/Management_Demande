@@ -1,4 +1,3 @@
-// DTOs/CreateDepartementDto.cs
 namespace backend.DTOs;
 
 public class CreateDepartementDto

@@ -1,4 +1,3 @@
-// Data/Repositories/IUtilisateurRepository.cs
 using backend.Models;
 
 namespace backend.Data.Repositories;

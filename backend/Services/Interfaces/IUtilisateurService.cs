@@ -1,4 +1,3 @@
-// Services/Interfaces/IUtilisateurService.cs
 using backend.Models;
 
 namespace backend.Services.Interfaces;
