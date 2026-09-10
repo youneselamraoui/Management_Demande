@@ -98,9 +98,11 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
           </div>
         )}
         {collapsed && (
-          <button title="Rechercher" className="mt-4 grid size-9 place-items-center rounded-lg border border-sidebar-border text-muted-foreground hover:bg-muted">
-            <Search className="size-4" />
-          </button>
+          <div className="mt-4 flex justify-center">
+            <button title="Rechercher" className="grid size-9 place-items-center rounded-lg border border-sidebar-border text-muted-foreground hover:bg-muted">
+              <Search className="size-4" />
+            </button>
+          </div>
         )}
 
         {!collapsed || mobileOpen ? <SectionLabel>Menu</SectionLabel> : <div className="pt-4" />}
