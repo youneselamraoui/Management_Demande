@@ -22,7 +22,7 @@ public partial class Demande
 
     [Column(TypeName = "nvarchar(max)")]
     public StatutDemande Statut { get; set; }
-    public int CapexId { get; set; }
+    public int? CapexId { get; set; }
 
     [Column("RFX", TypeName = "nvarchar(max)")]
     public string? RFX { get; set; }
@@ -57,7 +57,7 @@ public partial class Demande
 
     [ForeignKey("CapexId")]
     [InverseProperty("Demandes")]
-    public virtual Capex Capex { get; set; } = null!;
+    public virtual Capex? Capex { get; set; }
 
     [InverseProperty("Demande")]
     public virtual ICollection<DetailDemande> DetailDemandes { get; set; } = new List<DetailDemande>();

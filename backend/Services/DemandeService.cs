@@ -43,11 +43,12 @@ public class DemandeService : IDemandeService
         if (utilisateur is null)
             throw new BusinessException($"L'utilisateur {dto.UtilisateurId} n'existe pas.");
 
-        var capex = await _context.Capexes
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == dto.Id);
-        if (capex is null)
-            throw new BusinessException($"Le Capex {dto.Id} n'existe pas.");
+        backend.Data.EfModels.Capex? capex = null;
+        if (dto.CapexId != null)
+        {
+            capex = await _context.Capexes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == dto.CapexId);
+            if (capex is null) throw new BusinessException($"Le Capex {dto.CapexId} n'existe pas.");
+        }
 
         if (dto.Articles is null || dto.Articles.Count == 0)
             throw new BusinessException("Une demande doit contenir au moins un article.");
@@ -65,7 +66,7 @@ public class DemandeService : IDemandeService
         var entity = new EfDemande
         {
             UtilisateurId = dto.UtilisateurId,
-            Id = dto.Id,
+            CapexId = dto.CapexId,
             RFX = dto.RFX,
             Statut = StatutDemande.EnAttenteValidationAchat1,
             CreatedAt = DateTime.UtcNow
@@ -94,7 +95,7 @@ public class DemandeService : IDemandeService
             DepartementNom = departementNom,
             Statut = entity.Statut,
             CapexId = entity.CapexId,
-            CapexNom = capex.NomCapex,
+            CapexNom = capex?.NomCapex ?? string.Empty,
             RFX = entity.RFX,
             CreatedAt = entity.CreatedAt,
             DateValidationAchat1 = entity.DateValidationAchat1,
@@ -161,15 +162,18 @@ public class DemandeService : IDemandeService
             break;
         case StatutDemande.EnAttenteValidationDirecteur:
             demande.DateValidateDirecteur = maintenant;
-            var consommeActuel = await _context.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == demande.CapexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
-                .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
-            var resteCalcule = demande.Capex.BudgetTotal - consommeActuel;
-            if (resteCalcule < montant)
-                throw new BusinessException("Budget restant insuffisant pour valider cette demande.");
-            if (!ToutesLesValidationsSontFaites(demande))
-                throw new BusinessException("Toutes les validations doivent être faites avant Bon de commande.");
-            demande.Capex.BudgetRestant = resteCalcule - montant;
+            if (demande.CapexId != null && demande.Capex != null)
+            {
+                var consommeActuel = await _context.DetailDemandes
+                    .Where(dd => dd.Demande.CapexId == demande.CapexId && dd.Demande.Statut == StatutDemande.BonDeCommande)
+                    .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
+                var resteCalcule = demande.Capex.BudgetTotal - consommeActuel;
+                if (resteCalcule < montant)
+                    throw new BusinessException("Budget restant insuffisant pour valider cette demande.");
+                if (!ToutesLesValidationsSontFaites(demande))
+                    throw new BusinessException("Toutes les validations doivent être faites avant Bon de commande.");
+                demande.Capex.BudgetRestant = resteCalcule - montant;
+            }
             demande.Statut = StatutDemande.BonDeCommande;
             // Auto-création BonCommande si inexistant
             var fournisseur = await _context.Fournisseurs.FirstOrDefaultAsync();

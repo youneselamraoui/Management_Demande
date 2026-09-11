@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/AppShell";
-import { Search, FileText, Calendar, Truck, Hash, AlertTriangle, ChevronRight, X, Download } from "lucide-react";
+import { Search, FileText, Calendar, Truck, Hash, ChevronRight, X, Download } from "lucide-react";
 import { getBonCommandes, getDetailsDemande } from "../api/client";
 import { createPortal } from "react-dom";
 import { exportToExcel, formatDateExcel } from "../utils/exportExcel";
@@ -84,11 +84,6 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
 
   const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1);
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const incoherents = filtered.filter((b) => {
-    const st = b.statutDemande ?? b.StatutDemande ?? "";
-    const n = String(st).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return st && n !== "bon de commande" && n !== "bondecommande";
-  });
 
   async function handleExport() {
     if (!filtered.length) return;
@@ -99,14 +94,12 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
         PO: b.po ?? b.Po ?? "",
         DateCreation: formatDateExcel(b.dateCreation ?? b.DateCreation),
         Fournisseur: b.fournisseurNom ?? b.FournisseurNom ?? "",
-        Statut: b.statutDemande ?? b.StatutDemande ?? "",
       }));
       const columns = [
         { header: "DemandeId", key: "DemandeId" },
         { header: "PO", key: "PO" },
         { header: "DateCreation", key: "DateCreation" },
         { header: "Fournisseur", key: "Fournisseur" },
-        { header: "StatutDemande", key: "Statut" },
       ];
       const sheets = [{ name: "Bons de commande", rows, columns }];
       if (includeDetails) {
@@ -188,18 +181,6 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
       {loading && <p className="mt-6 text-sm text-muted-foreground">Chargement...</p>}
       {error && <p className="mt-6 text-sm text-destructive">{error}</p>}
 
-      {!loading && !error && incoherents.length > 0 && (
-        <div className="mt-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
-          <div>
-            <p className="font-semibold">Incohérence détectée ({incoherents.length})</p>
-            <p className="mt-1 text-amber-800">
-              {incoherents.length} bon(s) lié(s) à une demande non validée (ex: #{incoherents[0].demandeId ?? incoherents[0].DemandeId} — {(incoherents[0].statutDemande ?? incoherents[0].StatutDemande)}). Ils existent encore en base (bug SSMS) et restent affichés pour traçabilité.
-            </p>
-          </div>
-        </div>
-      )}
-
       {showExport && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onClick={() => setShowExport(false)}>
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
@@ -239,22 +220,14 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
                   </tr>
                 ) : (
                   pageItems.map((b) => {
-                    const statut = b.statutDemande ?? b.StatutDemande ?? "";
-                    const n = String(statut).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    const isIncoherent = statut && n !== "bon de commande" && n !== "bondecommande";
                     const demandeId = b.demandeId ?? b.DemandeId;
                     const expanded = expandedId === demandeId;
                     const details = detailsCache[demandeId];
                     return (
                       <>
-                        <tr key={b.id ?? b.Id} onClick={() => toggleExpand(demandeId)} className={`cursor-pointer border-b border-border last:border-0 hover:bg-muted/50 ${isIncoherent ? "bg-amber-50/60" : ""}`}>
+                        <tr key={b.id ?? b.Id} onClick={() => toggleExpand(demandeId)} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50">
                           <td className="px-4 py-3 text-center"><ChevronRight className={`size-4 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`} /></td>
-                          <td className="px-4 py-3.5 font-semibold">
-                            <span className="flex items-center gap-2">
-                              #{demandeId}
-                              {isIncoherent && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800" title={`Statut demande: ${statut}`}>Incohérent</span>}
-                            </span>
-                          </td>
+                          <td className="px-4 py-3.5 font-semibold">#{demandeId}</td>
                           <td className="px-4 py-3.5">{b.po ?? b.Po ?? "—"}</td>
                           <td className="px-4 py-3.5 text-muted-foreground">{b.dateCreation ?? b.DateCreation ? new Date(b.dateCreation ?? b.DateCreation).toLocaleDateString("fr-FR") : "—"}</td>
                           <td className="px-4 py-3.5">{b.fournisseurNom ?? b.FournisseurNom ?? "—"}</td>

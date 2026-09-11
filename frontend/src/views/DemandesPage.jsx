@@ -748,17 +748,21 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
           </div>
         </td>
         <td className={compact ? "px-2 py-3 overflow-hidden" : "px-4 py-3.5 whitespace-nowrap"}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const Id = demande.Id ?? demande.idCapex ?? demande.Id ?? null;
-              onNavigate?.("suivi", { capexNom: demande.capexNom, Id });
-            }}
-            className={compact ? "flex max-w-full cursor-pointer items-center gap-1 overflow-hidden text-muted-foreground hover:text-primary hover:underline underline-offset-2" : "flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-primary hover:underline underline-offset-2"}
-            title={`Voir suivi ${demande.capexNom}`}
-          >
-            <Calendar className="size-3.5 shrink-0" /> <span className={compact ? "truncate" : ""}>{demande.capexNom}</span>
-          </button>
+          {demande.capexNom ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const capexId = demande.capexId ?? demande.idCapex ?? demande.CapexId ?? null;
+                onNavigate?.("suivi", { capexNom: demande.capexNom, capexId });
+              }}
+              className={compact ? "flex max-w-full cursor-pointer items-center gap-1 overflow-hidden text-muted-foreground hover:text-primary hover:underline underline-offset-2" : "flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-primary hover:underline underline-offset-2"}
+              title={`Voir suivi ${demande.capexNom}`}
+            >
+              <Calendar className="size-3.5 shrink-0" /> <span className={compact ? "truncate" : ""}>{demande.capexNom}</span>
+            </button>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
         </td>
         <td className={compact ? "px-2 py-3 overflow-hidden" : "px-4 py-3.5 whitespace-nowrap"}>
           {(() => {

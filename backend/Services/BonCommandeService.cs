@@ -14,43 +14,10 @@ public class BonCommandeService : IBonCommandeService
     {
         var list = await _context.BonCommandes
             .Include(b => b.Fournisseur)
-            .Include(b => b.Demande)
             .AsNoTracking()
             .OrderByDescending(b => b.DateCreation)
             .ToListAsync();
-
-        var result = list.Select(Map).ToList();
-
-        // Compléter sans rien changer en DB : si tu passes directement par SSMS
-        // et mets Statut='BonDeCommande', on expose aussi ces demandes
-        // même si la table BonCommandes n'a pas encore de ligne
-        var existingDemandeIds = new HashSet<int>(result.Select(r => r.DemandeId));
-        var missingDemandes = await _context.Demandes
-            .AsNoTracking()
-            .Where(d => d.Statut == backend.Models.StatutDemande.BonDeCommande && !existingDemandeIds.Contains(d.Id))
-            .OrderByDescending(d => d.DateValidateDirecteur ?? d.CreatedAt)
-            .ToListAsync();
-
-        if (missingDemandes.Any())
-        {
-            var four = await _context.Fournisseurs.AsNoTracking().FirstOrDefaultAsync();
-            var fourNom = four?.Nom ?? "—";
-            var fourId = four?.Id ?? 0;
-            var synthetic = missingDemandes.Select(d => new BonCommandeDto
-            {
-                Id = d.Id,
-                DemandeId = d.Id,
-                Po = $"PO-{d.Id:00000}",
-                DateCreation = d.DateValidateDirecteur ?? d.CreatedAt,
-                FournisseurId = fourId,
-                FournisseurNom = fourNom,
-                StatutDemande = d.Statut.ToString()
-            });
-            result.AddRange(synthetic);
-            result = result.OrderByDescending(r => r.DateCreation).ToList();
-        }
-
-        return result;
+        return list.Select(Map).ToList();
     }
 
     public async Task<BonCommandeDto?> GetByIdAsync(int id)
@@ -91,6 +58,6 @@ public class BonCommandeService : IBonCommandeService
         DateCreation = e.DateCreation,
         FournisseurId = e.FournisseurId,
         FournisseurNom = e.Fournisseur?.Nom ?? string.Empty,
-        StatutDemande = e.Demande?.Statut.ToString() ?? string.Empty
+        StatutDemande = string.Empty
     };
 }

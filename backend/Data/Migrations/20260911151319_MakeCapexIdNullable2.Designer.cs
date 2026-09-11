@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data.EfModels;
 
@@ -11,9 +12,11 @@ using backend.Data.EfModels;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ProjetDbContext))]
-    partial class ProjetDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260911151319_MakeCapexIdNullable2")]
+    partial class MakeCapexIdNullable2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

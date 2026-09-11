@@ -4,7 +4,9 @@ using System.Text.Json.Serialization;
 public class CreateDemandeDto
 {
     public int UtilisateurId { get; set; }
-    public int Id { get; set; }
+    public int? CapexId { get; set; }
+    [JsonIgnore]
+    public int? Id { get => CapexId; set => CapexId = value; }
     public string? RFX { get; set; }
     [JsonIgnore]
     public string? RFx { get => RFX; set => RFX = value; }

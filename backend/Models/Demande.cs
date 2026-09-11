@@ -9,7 +9,7 @@ public class Demande
     public int UtilisateurId { get; set; }
     public string? UtilisateurNom { get; set; }
     public StatutDemande Statut { get; set; }
-    public int CapexId { get; set; }
+    public int? CapexId { get; set; }
     public string? CapexNom { get; set; }
     public string? DepartementNom { get; set; }
     public string? RFX { get; set; }
