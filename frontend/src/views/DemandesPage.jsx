@@ -240,12 +240,12 @@ export default function DemandesPage({ onNavigate, params, user }) {
   const now = new Date();
   function isEnAttente(s) {
     if (!s) return false;
-    const n = String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return n.includes("en attente") && !n.includes("refus");
+    const n = String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+    return n.includes("enattente") && !n.includes("refus");
   }
   function isBonDeCommande(s) {
-    const n = String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return n === "bon de commande" || n === "bondecommande";
+    const n = String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+    return n === "bondecommande";
   }
   const stats = {
     total: demandes.length,

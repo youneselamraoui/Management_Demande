@@ -79,8 +79,8 @@ export default function Dashboard({ onNavigate, user }) {
   );
   const resteBudget = budgetTotal - totalConsomme;
   const isEnAttente = (s) => {
-    const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    return n.includes("en attente") && !n.includes("refus");
+    const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+    return n.includes("enattente") && !n.includes("refus");
   };
   const enAttenteCount = demandes.filter((d) => isEnAttente(d.statut)).length;
   const pctRestant = budgetTotal > 0 ? (resteBudget / budgetTotal) * 100 : 0;
