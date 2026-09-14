@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import AppShell from "../components/AppShell";
 import { Search, FileText, Calendar, Truck, Hash, ChevronRight, X, Download } from "lucide-react";
 import { getBonCommandes, getDetailsDemande } from "../api/client";
 import DatePicker from "../components/ui/DatePicker";
@@ -28,7 +27,7 @@ function dateOptions(list, getRaw) {
   return options;
 }
 
-export default function BonCommandesPage({ onNavigate, params, user }) {
+export default function BonCommandesPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -166,7 +165,7 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
   }
 
   return (
-    <AppShell active="boncommandes" onNavigate={onNavigate} user={user}>
+    <>
       <div className="rounded-2xl border border-border p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -302,7 +301,7 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
           </div>
         </div>
       )}
-    </AppShell>
+    </>
   );
 }
 

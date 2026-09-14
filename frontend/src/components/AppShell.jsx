@@ -15,20 +15,21 @@ import {
   X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { NavLink, useMatches, useNavigate } from "react-router-dom";
 import logo from "../assets/img/ECI_logo1.png";
 // ajuste le chemin relatif selon où se trouve réellement AppShell.jsx par rapport à src/assets
 const MENU_ITEMS = [
-  { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { key: "demandes", label: "Suivi demandes d'achat", icon: ClipboardList },
-  { key: "repartition", label: "Demandes par département", icon: Building2 },
-  { key: "suivi", label: "Suivi Capex", icon: BarChart3 },
-  { key: "boncommandes", label: "Bons de commande", icon: FileText },
+  { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard, to: "/" },
+  { key: "demandes", label: "Suivi demandes d'achat", icon: ClipboardList, to: "/demandes" },
+  { key: "repartition", label: "Demandes par département", icon: Building2, to: "/repartition" },
+  { key: "suivi", label: "Suivi Capex", icon: BarChart3, to: "/suivi" },
+  { key: "boncommandes", label: "Bons de commande", icon: FileText, to: "/boncommandes" },
 ];
 const ACCOUNT_ITEMS = [
-  { key: "settings", label: "Paramètres", icon: Settings },
-  { key: "security", label: "Sécurité", icon: ShieldCheck },
+  { key: "settings", label: "Paramètres", icon: Settings, to: "/parametres" },
+  { key: "security", label: "Sécurité", icon: ShieldCheck, to: "/securite" },
 ];
-const SUPPORT_ITEMS = [{ key: "help", label: "Aide & Centre", icon: HelpCircle }];
+const SUPPORT_ITEMS = [{ key: "help", label: "Aide & Centre", icon: HelpCircle, to: "/aide" }];
 
 function initials(name = "") {
   return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
@@ -42,40 +43,45 @@ function SectionLabel({ children }) {
   );
 }
 
-function NavItem({ item, active, onNavigate, collapsed }) {
+function NavItem({ item, collapsed, onCloseMobile }) {
   const Icon = item.icon;
-  const isActive = active === item.key;
   return (
-    <button
-      onClick={() => onNavigate(item.key)}
+    <NavLink
+      to={item.to}
+      onClick={onCloseMobile}
       title={collapsed ? item.label : undefined}
-      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-        isActive ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground hover:bg-muted"
-      } ${collapsed ? "justify-center px-2" : ""}`}
+      className={({ isActive }) =>
+        `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+          isActive ? "bg-accent font-semibold text-accent-foreground" : "text-muted-foreground hover:bg-muted"
+        } ${collapsed ? "justify-center px-2" : ""}`
+      }
     >
       <Icon className="size-4 shrink-0" strokeWidth={1.8} />
       {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
-    </button>
+    </NavLink>
   );
 }
 
 export default function AppShell({ active, onNavigate, user, breadcrumb, children }) {
+  const matches = useMatches();
+  const navigate = useNavigate();
+  const navKey = active ?? matches.slice().reverse().find((m) => m.handle?.navKey)?.handle?.navKey ?? "dashboard";
+  const breadcrumbHandle = matches.slice().reverse().find((m) => m.handle?.breadcrumb);
   const activeLabel =
-    [...MENU_ITEMS, ...ACCOUNT_ITEMS, ...SUPPORT_ITEMS].find((i) => i.key === active)?.label ??
+    [...MENU_ITEMS, ...ACCOUNT_ITEMS, ...SUPPORT_ITEMS].find((i) => i.key === navKey)?.label ??
+    matches.slice().reverse().find((m) => m.handle?.title)?.handle?.title ??
     "Tableau de bord";
+  const resolvedBreadcrumb = breadcrumb ?? breadcrumbHandle?.handle?.breadcrumb;
 
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("sidebar:collapsed") === "1"; } catch { return false; }
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => {
-    try { localStorage.setItem("sidebar:collapsed", collapsed ? "1" : "0"); } catch {}
+    try { localStorage.setItem("sidebar:collapsed", collapsed ? "1" : "0"); } catch { void 0; }
   }, [collapsed]);
 
-  function handleNavigate(key) {
-    onNavigate(key);
-    setMobileOpen(false);
-  }
+  function closeMobile() { setMobileOpen(false); }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -110,21 +116,21 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
         {!collapsed || mobileOpen ? <SectionLabel>Menu</SectionLabel> : <div className="pt-4" />}
         <nav className="space-y-1">
           {MENU_ITEMS.map((item) => (
-            <NavItem key={item.key} item={item} active={active} onNavigate={handleNavigate} collapsed={collapsed && !mobileOpen} />
+            <NavItem key={item.key} item={item} collapsed={collapsed && !mobileOpen} onCloseMobile={closeMobile} />
           ))}
         </nav>
 
         {!collapsed || mobileOpen ? <SectionLabel>Compte</SectionLabel> : <div className="pt-4" />}
         <nav className="space-y-1">
           {ACCOUNT_ITEMS.map((item) => (
-            <NavItem key={item.key} item={item} active={active} onNavigate={handleNavigate} collapsed={collapsed && !mobileOpen} />
+            <NavItem key={item.key} item={item} collapsed={collapsed && !mobileOpen} onCloseMobile={closeMobile} />
           ))}
         </nav>
 
         {!collapsed || mobileOpen ? <SectionLabel>Support</SectionLabel> : <div className="pt-4" />}
         <nav className="space-y-1">
           {SUPPORT_ITEMS.map((item) => (
-            <NavItem key={item.key} item={item} active={active} onNavigate={handleNavigate} collapsed={collapsed && !mobileOpen} />
+            <NavItem key={item.key} item={item} collapsed={collapsed && !mobileOpen} onCloseMobile={closeMobile} />
           ))}
         </nav>
 
@@ -164,11 +170,11 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
               <ChevronLeft className={`size-4 transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`} />
             </button>
             <span>Capex Manager</span>
-            {breadcrumb ? (
+            {resolvedBreadcrumb ? (
               <>
                 <span className="text-muted-foreground/60">›</span>
-                <button onClick={breadcrumb.onClick} className="hover:text-foreground">
-                  {breadcrumb.label}
+                <button onClick={() => navigate(resolvedBreadcrumb.to ?? "/")} className="hover:text-foreground">
+                  {resolvedBreadcrumb.label}
                 </button>
               </>
             ) : null}

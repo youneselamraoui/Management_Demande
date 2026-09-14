@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Layers, Download, CreditCard, Monitor, Truck, Wallet, Filter, TrendingUp, Info, ShieldCheck, AlertTriangle, Search } from "lucide-react";
 import { exportSvgAsPng } from "../utils/exportGraphe";
-import AppShell from "../components/AppShell";
 import { ProgressBar, StatCard } from "../components/ui/Primitives";
 import DatePicker from "../components/ui/DatePicker";
 import { getCapex, getConsommationCapex } from "../api/client";
@@ -23,9 +23,12 @@ function getDeptConfig(name, index = 0) {
   return { icon: FALLBACK_ICONS[index % FALLBACK_ICONS.length], color: FALLBACK_COLORS[index % FALLBACK_COLORS.length] };
 }
 
-export default function SuiviCapex({ onNavigate, params, user }) {
+export default function SuiviCapex() {
+  const navigate = useNavigate();
+  const { id: routeId } = useParams();
+  const [searchParams] = useSearchParams();
   const [capexList, setCapexList] = useState([]);
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedId, setSelectedId] = useState(routeId || "");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,21 +51,37 @@ export default function SuiviCapex({ onNavigate, params, user }) {
   }
 
   useEffect(() => {
+    if (routeId) setSelectedId(routeId);
+  }, [routeId]);
+
+  useEffect(() => {
     getCapex()
       .then((list) => {
         setCapexList(list);
-        if (list.length > 0) setSelectedId(resolveId(list, params));
+        if (list.length > 0) {
+          if (routeId) {
+            const exists = list.find((c) => String(c.Id) === String(routeId));
+            setSelectedId(exists ? exists.Id : list[0].Id);
+          } else if (searchParams.get("capex")) {
+            setSelectedId(resolveId(list, { capexNom: searchParams.get("capex") }));
+          } else if (!selectedId) {
+            setSelectedId(list[0].Id);
+          }
+        }
       })
       .catch((e) => setError(e.message));
   }, []);
 
   useEffect(() => {
-    if (!capexList.length || !params) return;
-    const resolved = resolveId(capexList, params);
-    if (resolved && String(resolved) !== String(selectedId)) {
-      setSelectedId(resolved);
+    if (!capexList.length) return;
+    if (routeId && String(routeId) !== String(selectedId)) {
+      const exists = capexList.find((c) => String(c.Id) === String(routeId));
+      if (exists) setSelectedId(exists.Id);
+    } else if (searchParams.get("capex")) {
+      const resolved = resolveId(capexList, { capexNom: searchParams.get("capex") });
+      if (resolved && String(resolved) !== String(selectedId)) setSelectedId(resolved);
     }
-  }, [params?.Id, params?.capexNom]);
+  }, [searchParams, capexList]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -74,18 +93,10 @@ export default function SuiviCapex({ onNavigate, params, user }) {
   }, [selectedId, from, to]);
 
   if (error) {
-    return (
-      <AppShell active="suivi" onNavigate={onNavigate} user={user}>
-        <p className="text-destructive">{error}</p>
-      </AppShell>
-    );
+    return <p className="text-destructive">{error}</p>;
   }
   if (loading || !data) {
-    return (
-      <AppShell active="suivi" onNavigate={onNavigate} user={user}>
-        <p className="text-muted-foreground">Chargement...</p>
-      </AppShell>
-    );
+    return <p className="text-muted-foreground">Chargement...</p>;
   }
 
   const totalConsommeReel = data.parDepartement.reduce((sum, d) => sum + d.montantConsomme, 0);
@@ -110,12 +121,7 @@ export default function SuiviCapex({ onNavigate, params, user }) {
   const displaySlices = deptSearch ? slices.filter((s) => s.departementNom.toLowerCase().includes(deptSearch.toLowerCase())) : slices;
 
   return (
-    <AppShell
-      active="suivi"
-      onNavigate={onNavigate}
-      user={user}
-      breadcrumb={{ label: "Tableau de bord", onClick: () => onNavigate("demandes") }}
-    >
+    <>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Suivi Capex</h1>
@@ -128,7 +134,7 @@ export default function SuiviCapex({ onNavigate, params, user }) {
             <Layers className="size-4 text-muted-foreground" />
             <select
               value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
+              onChange={(e) => { const v=e.target.value; setSelectedId(v); navigate(`/capex/${v}`); }}
               className="bg-transparent outline-none"
             >
               {capexList.map((c) => (
@@ -354,12 +360,12 @@ export default function SuiviCapex({ onNavigate, params, user }) {
 
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            onClick={() => onNavigate("demandes", { capex: data.nomCapex })}
+            onClick={() => navigate(`/demandes?capex=${encodeURIComponent(data.nomCapex)}`)}
           >
             Voir toutes les demandes →
           </button>
         </div>
       </section>
-    </AppShell>
+    </>
   );
 }

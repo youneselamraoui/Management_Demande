@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import AppShell from "../components/AppShell";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, MoreHorizontal, Pencil, Check, X, Building2, Maximize2, Minimize2, CreditCard, Monitor, Truck, ShieldCheck, Layers, Download } from "lucide-react";
 import { StatutBadge, Avatar, StatCard } from "../components/ui/Primitives";
 import CreateDemandeModal from "../components/CreateDemandeModal";
@@ -103,7 +103,8 @@ function dateOptions(list, getRaw) {
   return options;
 }
 
-export default function DemandesPage({ onNavigate, params, user }) {
+export default function DemandesPage() {
+  const [searchParams] = useSearchParams();
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -122,20 +123,22 @@ export default function DemandesPage({ onNavigate, params, user }) {
   const [dateTo, setDateTo] = useState("");
   const [filters, setFilters] = useState(() => ({
     ...DEFAULT_FILTERS,
-    ...(params?.capex ? { capex: params.capex } : {}),
-    ...(params?.departement ? { departement: params.departement } : {}),
+    ...(searchParams.get("capex") ? { capex: searchParams.get("capex") } : {}),
+    ...(searchParams.get("departement") ? { departement: searchParams.get("departement") } : {}),
   }));
 
   useEffect(() => {
-    if (params?.capex && params.capex !== filters.capex) {
-      setFilters((prev) => ({ ...prev, capex: params.capex }));
+    const capex = searchParams.get("capex");
+    const departement = searchParams.get("departement");
+    if (capex && capex !== filters.capex) {
+      setFilters((prev) => ({ ...prev, capex }));
       setPage(1);
     }
-    if (params?.departement && params.departement !== filters.departement) {
-      setFilters((prev) => ({ ...prev, departement: params.departement }));
+    if (departement && departement !== filters.departement) {
+      setFilters((prev) => ({ ...prev, departement }));
       setPage(1);
     }
-  }, [params?.capex, params?.departement]);
+  }, [searchParams]);
 
   useEffect(() => { load(); }, []);
 
@@ -365,7 +368,7 @@ export default function DemandesPage({ onNavigate, params, user }) {
   }
 
   return (
-    <AppShell active="demandes" onNavigate={onNavigate} user={user}>
+    <>
       <div className="rounded-2xl border border-border p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -603,7 +606,6 @@ export default function DemandesPage({ onNavigate, params, user }) {
                       details={detailsCache[d.idDemande]}
                       onValider={() => traiterDemande(d.idDemande, "valider")}
                       onRefuser={() => traiterDemande(d.idDemande, "refuser")}
-                      onNavigate={onNavigate}
                       expandedTable={tableExpanded}
                     />
                   ))
@@ -648,7 +650,7 @@ export default function DemandesPage({ onNavigate, params, user }) {
       </div>
 
       {showModal && <CreateDemandeModal onClose={() => setShowModal(false)} onCreated={handleCreated} />}
-    </AppShell>
+    </>
   );
 }
 
@@ -791,7 +793,8 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
     </th>
   );
 }
-function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser, onNavigate, expandedTable }) {
+function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser, expandedTable }) {
+  const navigate = useNavigate();
   const compact = !expandedTable;
   return (
     <>
@@ -813,8 +816,9 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                const capexId = demande.capexId ?? demande.idCapex ?? demande.CapexId ?? null;
-                onNavigate?.("suivi", { capexNom: demande.capexNom, capexId });
+                const capexId = demande.capexId ?? demande.idCapex ?? demande.CapexId ?? demande.id ?? demande.Id ?? null;
+                if (capexId) navigate(`/capex/${capexId}`);
+                else navigate(`/suivi?capex=${encodeURIComponent(demande.capexNom ?? "")}`);
               }}
               className={compact ? "flex max-w-full cursor-pointer items-center gap-1 overflow-hidden text-muted-foreground hover:text-primary hover:underline underline-offset-2" : "flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-primary hover:underline underline-offset-2"}
               title={`Voir suivi ${demande.capexNom}`}

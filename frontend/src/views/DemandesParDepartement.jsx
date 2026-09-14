@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import AppShell from "../components/AppShell";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { StatCard } from "../components/ui/Primitives";
 import DatePicker from "../components/ui/DatePicker";
 import { getDemandes } from "../api/client";
@@ -31,13 +31,16 @@ function getDeptConfig(name, idx=0) {
   return { icon: Building2, color: FALLBACK_COLORS[idx % FALLBACK_COLORS.length] };
 }
 
-export default function DemandesParDepartement({ onNavigate, user }) {
+export default function DemandesParDepartement() {
+  const navigate = useNavigate();
+  const { nom: routeDept } = useParams();
+  const [searchParams] = useSearchParams();
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
-  const [capexFilter, setCapexFilter] = useState("Tous");
-  const [selectedDept, setSelectedDept] = useState("Tous");
+  const [capexFilter, setCapexFilter] = useState(searchParams.get("capex") || "Tous");
+  const [selectedDept, setSelectedDept] = useState(routeDept ? decodeURIComponent(routeDept) : "Tous");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [deptSearch, setDeptSearch] = useState("");
@@ -50,6 +53,10 @@ export default function DemandesParDepartement({ onNavigate, user }) {
     setLoading(true);
     getDemandes().then(setDemandes).catch(e=>setError(e.message)).finally(()=>setLoading(false));
   }, []);
+  useEffect(() => {
+    if (routeDept) setSelectedDept(decodeURIComponent(routeDept));
+    else setSelectedDept("Tous");
+  }, [routeDept]);
 
   const capexOptions = useMemo(() => {
     const s = new Set(demandes.map(d=>d.capexNom).filter(Boolean));
@@ -200,11 +207,11 @@ export default function DemandesParDepartement({ onNavigate, user }) {
   const enAttenteSingle = isSingle ? singleDemandes.filter(d=>isEnAttente(d.statut)).length : 0;
   const ceMoisSingle = isSingle ? singleDemandes.filter(d=>{ const dt=new Date(d.createAt); const now=new Date(); return dt.getMonth()===now.getMonth() && dt.getFullYear()===now.getFullYear(); }).length : 0;
 
-  if (loading) return <AppShell active="repartition" onNavigate={onNavigate} user={user}><p className="text-muted-foreground">Chargement...</p></AppShell>;
-  if (error) return <AppShell active="repartition" onNavigate={onNavigate} user={user}><p className="text-destructive">{error}</p></AppShell>;
+  if (loading) return <p className="text-muted-foreground">Chargement...</p>;
+  if (error) return <p className="text-destructive">{error}</p>;
 
   return (
-    <AppShell active="repartition" onNavigate={onNavigate} user={user} breadcrumb={{label:"Tableau de bord", onClick:()=>onNavigate("dashboard")}}>
+    <>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Demandes par département</h1>
@@ -216,8 +223,8 @@ export default function DemandesParDepartement({ onNavigate, user }) {
           <button onClick={handleExport} disabled={!filtered.length} className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50">
             <Download className="size-4"/> Exporter {isSingle ? "liste" : "Excel"}
           </button>
-          {!isSingle && <button onClick={()=>onNavigate("demandes")} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Voir demandes →</button>}
-          {isSingle && <button onClick={()=>setSelectedDept("Tous")} className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">← Tous les départements</button>}
+          {!isSingle && <button onClick={()=>navigate("/demandes")} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Voir demandes →</button>}
+          {isSingle && <button onClick={()=>navigate("/repartition")} className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">← Tous les départements</button>}
         </div>
       </header>
 
@@ -234,7 +241,7 @@ export default function DemandesParDepartement({ onNavigate, user }) {
               return (
                 <button
                   key={d}
-                  onClick={()=>setSelectedDept(d)}
+                  onClick={()=>navigate(d==="Tous" ? "/repartition" : `/departements/${encodeURIComponent(d)}`)}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition ${isActive ? "bg-primary border-primary text-primary-foreground shadow-sm" : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground"}`}
                 >
                   {d!=="Tous" && <span className="size-2 rounded-full" style={{backgroundColor: isActive ? "white" : cfg.color}}/>}
@@ -380,7 +387,7 @@ export default function DemandesParDepartement({ onNavigate, user }) {
                     <h2 className="font-bold text-sm">Demandes — {selectedDept} ({singleSorted.length})</h2>
                     <div className="flex items-center gap-2">
                       <button onClick={()=>setSortAsc(v=>!v)} className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted" title="Trier par N°"><ArrowUpDown className="size-3.5"/> N°</button>
-                      <button onClick={()=>onNavigate("demandes",{departement:selectedDept})} className="hidden sm:inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90">Ouvrir dans Suivi <ChevronRight className="size-3"/></button>
+                      <button onClick={()=>navigate(`/demandes?departement=${encodeURIComponent(selectedDept)}`)} className="hidden sm:inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90">Ouvrir dans Suivi <ChevronRight className="size-3"/></button>
                     </div>
                   </div>
                   <div className="overflow-x-auto">
@@ -399,7 +406,7 @@ export default function DemandesParDepartement({ onNavigate, user }) {
                         {singlePageItems.length===0 ? (
                           <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Aucune demande.</td></tr>
                         ) : singlePageItems.map(d=>(
-                          <tr key={d.idDemande ?? d.Id} className="border-t border-border hover:bg-muted/40 cursor-pointer" onClick={()=>onNavigate("demandes")}>
+                          <tr key={d.idDemande ?? d.Id} className="border-t border-border hover:bg-muted/40 cursor-pointer" onClick={()=>navigate("/demandes")}>
                             <td className="px-4 py-3 font-semibold">#{d.idDemande ?? d.Id}</td>
                             <td className="px-4 py-3"><div className="flex items-center gap-2"><Avatar name={d.utilisateurNom}/><span className="truncate">{d.utilisateurNom}</span></div></td>
                             <td className="px-4 py-3 text-muted-foreground">{d.capexNom}</td>
@@ -546,7 +553,7 @@ export default function DemandesParDepartement({ onNavigate, user }) {
                         {Object.entries(info.byCapex).sort((a,b)=>b[1]-a[1]).map(([capex, cnt], i)=>(
                           <button
                             key={capex}
-                            onClick={()=>onNavigate("demandes", {capex})}
+                            onClick={()=>navigate(`/demandes?capex=${encodeURIComponent(capex)}`)}
                             className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium hover:bg-muted"
                             title={`Voir demandes ${capex}`}
                           >
@@ -561,7 +568,7 @@ export default function DemandesParDepartement({ onNavigate, user }) {
                       <div className="text-xs text-muted-foreground">demandes</div>
                     </div>
                     <button
-                      onClick={()=>setSelectedDept(dept)}
+                      onClick={()=>navigate(`/departements/${encodeURIComponent(dept)}`)}
                       className="hidden sm:inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                       title="Voir statistiques de ce département"
                     >
@@ -597,7 +604,7 @@ export default function DemandesParDepartement({ onNavigate, user }) {
               </thead>
               <tbody>
                 {deptEntries.map(([dept,info])=>(
-                  <tr key={dept} className="border-t border-border hover:bg-muted/40 cursor-pointer" onClick={()=>setSelectedDept(dept)}>
+                  <tr key={dept} className="border-t border-border hover:bg-muted/40 cursor-pointer" onClick={()=>navigate(`/departements/${encodeURIComponent(dept)}`)}>
                     <td className="px-4 py-3 font-semibold flex items-center gap-2"><Building2 className="size-4 text-muted-foreground shrink-0"/>{dept}</td>
                     <td className="px-4 py-3 text-center font-bold">{info.total}</td>
                     {capexList.map(c=> <td key={c} className="px-4 py-3 text-center">{info.byCapex[c]||0}</td>)}
@@ -608,9 +615,9 @@ export default function DemandesParDepartement({ onNavigate, user }) {
             </table>
           </div>
         </section>
-      )}
+        )}
         </>
       )}
-    </AppShell>
+    </>
   );
 }

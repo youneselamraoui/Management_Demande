@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getCapex, getConsommationCapex, getDemandes, getDetailsDemande } from "../api/client";
 import { CreditCard, TrendingDown, PiggyBank, FileText, MoreHorizontal } from "lucide-react";
 import { Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import AppShell from "../components/AppShell";
 import { StatCard, StatutBadge, Avatar } from "../components/ui/Primitives";
 import logo from "../assets/img/logo.png";
 
@@ -10,7 +10,8 @@ import logo from "../assets/img/logo.png";
 const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 const DEPT_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)"];
 
-export default function Dashboard({ onNavigate, user }) {
+export default function Dashboard() {
+  const navigate = useNavigate();
   const [consoByCapex, setConsoByCapex] = useState([]);
   const [demandes, setDemandes] = useState([]);
   const [monthlyTrend, setMonthlyTrend] = useState([]);
@@ -58,18 +59,10 @@ export default function Dashboard({ onNavigate, user }) {
   }
 
   if (error) {
-    return (
-      <AppShell active="dashboard" onNavigate={onNavigate} user={user}>
-        <p className="text-destructive">{error}</p>
-      </AppShell>
-    );
+    return <p className="text-destructive">{error}</p>;
   }
   if (loading) {
-    return (
-      <AppShell active="dashboard" onNavigate={onNavigate} user={user}>
-        <p className="text-muted-foreground">Chargement...</p>
-      </AppShell>
-    );
+    return <p className="text-muted-foreground">Chargement...</p>;
   }
 
   const budgetTotal = consoByCapex.reduce((s, c) => s + (c?.budgetTotal || 0), 0);
@@ -109,7 +102,7 @@ export default function Dashboard({ onNavigate, user }) {
   const recentDemandes = [...demandes].filter((d) => !String(d.statut).startsWith("Refusee")).sort((a, b) => new Date(b.createAt) - new Date(a.createAt)).slice(0, 5);
 
   return (
-    <AppShell active="dashboard" onNavigate={onNavigate} user={user}>
+    <>
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Bienvenue, </h1>
@@ -189,7 +182,7 @@ export default function Dashboard({ onNavigate, user }) {
       <section className="mt-6 rounded-2xl border border-border p-6">
         <div className="flex items-center justify-between">
           <h2 className="font-bold">Demandes récentes</h2>
-          <button className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted" onClick={() => onNavigate("demandes")}>
+          <button className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted" onClick={() => navigate("/demandes")}>
             Voir tout
           </button>
         </div>
@@ -204,7 +197,7 @@ export default function Dashboard({ onNavigate, user }) {
             </thead>
             <tbody>
               {recentDemandes.map((d) => (
-                <tr key={d.idDemande} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50" onClick={() => onNavigate("demandes")}>
+                <tr key={d.idDemande} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50" onClick={() => navigate("/demandes")}>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <Avatar name={d.utilisateurNom} />
@@ -221,7 +214,7 @@ export default function Dashboard({ onNavigate, user }) {
           </table>
         </div>
       </section>
-    </AppShell>
+    </>
   );
 }
 
