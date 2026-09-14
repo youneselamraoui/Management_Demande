@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/AppShell";
 import { Search, FileText, Calendar, Truck, Hash, ChevronRight, X, Download } from "lucide-react";
 import { getBonCommandes, getDetailsDemande } from "../api/client";
+import DatePicker from "../components/ui/DatePicker";
 import { createPortal } from "react-dom";
 import { exportToExcel, formatDateExcel } from "../utils/exportExcel";
 
@@ -36,6 +37,9 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
   const [expandedId, setExpandedId] = useState(null);
   const [detailsCache, setDetailsCache] = useState({});
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  // filtre intervalle dates – même UX que SuiviCapex
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [showExport, setShowExport] = useState(false);
   const [includeDetails, setIncludeDetails] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -66,7 +70,7 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
   const poOptions = textOptions(data, (b) => b.po ?? b.Po);
   const fournisseurOptions = textOptions(data, (b) => b.fournisseurNom ?? b.FournisseurNom);
   const dateCreationOptions = dateOptions(data, (b) => b.dateCreation ?? b.DateCreation);
-  const activeFiltersCount = Object.values(filters).filter((v) => v !== "Tous").length;
+  const activeFiltersCount = Object.values(filters).filter((v) => v !== "Tous").length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   const filtered = data.filter((b) => {
     const q = search.toLowerCase();
@@ -79,6 +83,20 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
     if (filters.po !== "Tous" && (b.po ?? b.Po) !== filters.po) return false;
     if (filters.fournisseur !== "Tous" && (b.fournisseurNom ?? b.FournisseurNom) !== filters.fournisseur) return false;
     if (filters.dateCreation !== "Tous" && formatDate(b.dateCreation ?? b.DateCreation) !== filters.dateCreation) return false;
+    // intervalle dates sur DateCreation – même logique que SuiviCapex
+    if (dateFrom || dateTo) {
+      const raw = b.dateCreation ?? b.DateCreation;
+      const t = raw ? new Date(raw) : null;
+      if (!t || isNaN(t.getTime())) return false;
+      if (dateFrom) {
+        const fromD = new Date(dateFrom + "T00:00:00");
+        if (t < fromD) return false;
+      }
+      if (dateTo) {
+        const toD = new Date(dateTo + "T23:59:59.999");
+        if (t > toD) return false;
+      }
+    }
     return true;
   });
 
@@ -168,13 +186,40 @@ export default function BonCommandesPage({ onNavigate, params, user }) {
             />
           </div>
           {activeFiltersCount > 0 && (
-            <button onClick={() => setFilters(DEFAULT_FILTERS)} className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm font-medium hover:bg-muted/70">
+            <button onClick={() => { setFilters(DEFAULT_FILTERS); setDateFrom(""); setDateTo(""); setPage(1); }} className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm font-medium hover:bg-muted/70">
               <X className="size-3.5" /> Réinitialiser ({activeFiltersCount})
             </button>
           )}
           <button onClick={() => setShowExport(true)} disabled={!filtered.length} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50">
             <Download className="size-4" /> Exporter
           </button>
+        </div>
+
+        {/* Filtre date intervalle – même design que SuiviCapex */}
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Calendar className="size-4" />
+            <span className="hidden sm:inline">Période (Date création)</span>
+            <span className="sm:hidden">Période</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            <span className="px-1 text-sm font-semibold text-muted-foreground">→</span>
+            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                Effacer
+              </button>
+            )}
+          </div>
+          {(dateFrom || dateTo) && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {filtered.length} résultat{filtered.length !== 1 ? "s" : ""} sur {data.length}
+            </span>
+          )}
         </div>
       </div>
 

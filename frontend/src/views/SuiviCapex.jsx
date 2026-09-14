@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { Layers, Download, CreditCard, Monitor, Truck, Wallet, Filter, TrendingUp, Info, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Layers, Download, CreditCard, Monitor, Truck, Wallet, Filter, TrendingUp, Info, ShieldCheck, AlertTriangle, Search } from "lucide-react";
 import { exportSvgAsPng } from "../utils/exportGraphe";
 import AppShell from "../components/AppShell";
 import { ProgressBar, StatCard } from "../components/ui/Primitives";
+import DatePicker from "../components/ui/DatePicker";
 import { getCapex, getConsommationCapex } from "../api/client";
 
 const DEPT_CONFIG = {
@@ -28,6 +29,9 @@ export default function SuiviCapex({ onNavigate, params, user }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [deptSearch, setDeptSearch] = useState("");
   const svgRef = useRef(null);
 
   function resolveId(list, p) {
@@ -63,11 +67,11 @@ export default function SuiviCapex({ onNavigate, params, user }) {
   useEffect(() => {
     if (!selectedId) return;
     setLoading(true);
-    getConsommationCapex(selectedId)
+    getConsommationCapex(selectedId, from || undefined, to || undefined)
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [selectedId]);
+  }, [selectedId, from, to]);
 
   if (error) {
     return (
@@ -102,6 +106,8 @@ export default function SuiviCapex({ onNavigate, params, user }) {
     cumulative += pct;
     return slice;
   }) : [];
+  const displayParDepartement = deptSearch ? data.parDepartement.filter((d) => d.departementNom.toLowerCase().includes(deptSearch.toLowerCase())) : data.parDepartement;
+  const displaySlices = deptSearch ? slices.filter((s) => s.departementNom.toLowerCase().includes(deptSearch.toLowerCase())) : slices;
 
   return (
     <AppShell
@@ -149,7 +155,33 @@ export default function SuiviCapex({ onNavigate, params, user }) {
         </div>
       </header>
 
-      {(data.resteBudgetIncoherent || data.ResteBudgetIncoherent) && (
+      <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
+        <div className="flex items-center gap-2">
+          <DatePicker value={from} onChange={setFrom} placeholder="jj/mm/aaaa" />
+          <span className="px-1 text-sm font-semibold text-muted-foreground">→</span>
+          <DatePicker value={to} onChange={setTo} placeholder="jj/mm/aaaa" />
+          {(from || to) && (
+            <button
+              onClick={() => { setFrom(""); setTo(""); }}
+              className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Effacer
+            </button>
+          )}
+        </div>
+        <div className="ml-auto flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Rechercher département..."
+            value={deptSearch}
+            onChange={(e) => setDeptSearch(e.target.value)}
+            className="w-40 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 sm:w-52"
+          />
+        </div>
+      </div>
+
+      {(data.resteBudgetIncoherent || data.ResteBudgetIncoherent) && !from && !to && (
         <div className="mt-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
           <div>
@@ -157,6 +189,15 @@ export default function SuiviCapex({ onNavigate, params, user }) {
             <p className="mt-1 text-amber-800">
               Valeur stockée en base: {(data.budgetRestantStocke ?? data.BudgetRestantStocke)?.toLocaleString("fr-FR")} $ — Valeur calculée: {(data.budgetRestantCalcule ?? data.BudgetRestantCalcule)?.toLocaleString("fr-FR")} $ (BudgetTotal - consommé). Écart: {((data.budgetRestantStocke ?? data.BudgetRestantStocke) - (data.budgetRestantCalcule ?? data.BudgetRestantCalcule))?.toLocaleString("fr-FR")} $. Modif directe SSMS détectée.
             </p>
+          </div>
+        </div>
+      )}
+      {(from || to) && (data.budgetRestantStocke ?? data.BudgetRestantStocke) !== (data.budgetRestantCalcule ?? data.BudgetRestantCalcule) && (
+        <div className="mt-6 flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          <Info className="mt-0.5 size-5 shrink-0 text-blue-600" />
+          <div>
+            <p className="font-semibold">Filtre actif — calcul filtré</p>
+            <p className="mt-1 text-blue-800">Reste affiché {(data.budgetRestantCalcule ?? data.BudgetRestantCalcule)?.toLocaleString("fr-FR")} $ correspond à l’intervalle {from || "…"} → {to || "…"} (BudgetTotal - consommé filtré). Valeur stockée globale {(data.budgetRestantStocke ?? data.BudgetRestantStocke)?.toLocaleString("fr-FR")} $ ignorée pendant le filtre.</p>
           </div>
         </div>
       )}
@@ -196,7 +237,7 @@ export default function SuiviCapex({ onNavigate, params, user }) {
           <div className="my-5 flex justify-center">
             <svg ref={svgRef} width="220" height="220" viewBox="0 0 220 220">
               <circle cx="110" cy="110" r={radius} fill="none" stroke="var(--color-muted)" strokeWidth="28" />
-              {slices.map((s) => (
+              {(deptSearch ? displaySlices : slices).map((s) => (
                 <circle
                   key={s.departementNom}
                   cx="110" cy="110" r={radius}
@@ -217,7 +258,7 @@ export default function SuiviCapex({ onNavigate, params, user }) {
             </svg>
           </div>
           <div className="flex flex-wrap justify-center gap-3">
-            {slices.map((s) => (
+            {(deptSearch ? displaySlices : slices).map((s) => (
               <span key={`legend-${s.departementNom}`} className="flex items-center gap-1.5 text-xs font-medium">
                 <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
                 {s.departementNom}
@@ -251,7 +292,7 @@ export default function SuiviCapex({ onNavigate, params, user }) {
           </div>
 
           <div className="mt-3">
-            {data.parDepartement.map((d, i) => {
+            {(deptSearch ? displayParDepartement : data.parDepartement).map((d, i) => {
               const { icon: Icon, color } = getDeptConfig(d.departementNom, i);
               const pct = data.budgetTotal > 0 ? (d.montantConsomme / data.budgetTotal) * 100 : 0;
               return (

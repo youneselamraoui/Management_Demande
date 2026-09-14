@@ -71,15 +71,18 @@ public class CapexService : ICapexService
         return MapToModel(entity, entity.BudgetRestant);
     }
 
-    public async Task<ConsommationCapexDto?> GetConsommationAsync(int Id)
+    public async Task<ConsommationCapexDto?> GetConsommationAsync(int Id, DateTime? from = null, DateTime? to = null)
     {
         var entity = await _context.Capexes.AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == Id);
         if (entity is null) return null;
 
-        var parDepartement = await _context.DetailDemandes
-            .AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == Id && dd.Demande.Statut == StatutDemande.BonDeCommande)
+        var parDepartementQuery = _context.DetailDemandes.AsNoTracking()
+            .Where(dd => dd.Demande.CapexId == Id && dd.Demande.Statut == StatutDemande.BonDeCommande);
+        if (from != null) parDepartementQuery = parDepartementQuery.Where(dd => dd.Demande.CreatedAt >= from);
+        if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); parDepartementQuery = parDepartementQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
+
+        var parDepartement = await parDepartementQuery
             .GroupBy(dd => dd.Demande.Utilisateur.Departement.Nom)
             .Select(g => new ConsommationDepartementDto
             {
@@ -99,12 +102,17 @@ public class CapexService : ICapexService
             StatutDemande.EnAttenteValidationDirecteur
         };
 
-        var montantEnAttente = await _context.DetailDemandes
-            .AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == Id && statutsEnAttente.Contains(dd.Demande.Statut))
-            .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
+        var enAttenteQuery = _context.DetailDemandes.AsNoTracking()
+            .Where(dd => dd.Demande.CapexId == Id && statutsEnAttente.Contains(dd.Demande.Statut));
+        if (from != null) enAttenteQuery = enAttenteQuery.Where(dd => dd.Demande.CreatedAt >= from);
+        if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); enAttenteQuery = enAttenteQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
+        var montantEnAttente = await enAttenteQuery.SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
 
-        var resteCalcule = await CalculateResteBudgetAsync(Id, entity.BudgetTotal);
+        var resteCalculeQuery = _context.DetailDemandes.AsNoTracking().Where(dd => dd.Demande.CapexId == Id && dd.Demande.Statut == StatutDemande.BonDeCommande);
+        if (from != null) resteCalculeQuery = resteCalculeQuery.Where(dd => dd.Demande.CreatedAt >= from);
+        if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); resteCalculeQuery = resteCalculeQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
+        var consommeFiltre = await resteCalculeQuery.SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
+        var resteCalcule = entity.BudgetTotal - consommeFiltre;
         var stocke = entity.BudgetRestant;
 
         return new ConsommationCapexDto

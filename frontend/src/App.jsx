@@ -3,6 +3,7 @@ import DemandesPage from "./views/DemandesPage";
 import SuiviCapex from "./views/SuiviCapex";
 import Dashboard from "./views/Dashboard";
 import BonCommandesPage from "./views/BonCommandesPage";
+import DemandesParDepartement from "./views/DemandesParDepartement";
 
 const CURRENT_USER = { name: "ECI", role: "" }; // à remplacer par ton auth réelle
 
@@ -11,6 +12,7 @@ const PAGES = {
   demandes: DemandesPage,
   suivi: SuiviCapex,
   boncommandes: BonCommandesPage,
+  repartition: DemandesParDepartement,
 };
 
 function App() {

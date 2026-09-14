@@ -3,6 +3,7 @@ import AppShell from "../components/AppShell";
 import { Search, ArrowUpDown, Plus, FileText, Clock, Calendar, ChevronRight, MoreHorizontal, Pencil, Check, X, Building2, Maximize2, Minimize2, CreditCard, Monitor, Truck, ShieldCheck, Layers, Download } from "lucide-react";
 import { StatutBadge, Avatar, StatCard } from "../components/ui/Primitives";
 import CreateDemandeModal from "../components/CreateDemandeModal";
+import DatePicker from "../components/ui/DatePicker";
 import { getDemandes, getDetailsDemande, refuserDemande, validerDemande } from "../api/client";
 import { createPortal } from "react-dom";
 import { exportToExcel, formatDateExcel } from "../utils/exportExcel";
@@ -116,9 +117,13 @@ export default function DemandesPage({ onNavigate, params, user }) {
   const [showExport, setShowExport] = useState(false);
   const [includeDetails, setIncludeDetails] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // filtre intervalle dates – même UX que SuiviCapex
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [filters, setFilters] = useState(() => ({
     ...DEFAULT_FILTERS,
     ...(params?.capex ? { capex: params.capex } : {}),
+    ...(params?.departement ? { departement: params.departement } : {}),
   }));
 
   useEffect(() => {
@@ -126,7 +131,11 @@ export default function DemandesPage({ onNavigate, params, user }) {
       setFilters((prev) => ({ ...prev, capex: params.capex }));
       setPage(1);
     }
-  }, [params?.capex]);
+    if (params?.departement && params.departement !== filters.departement) {
+      setFilters((prev) => ({ ...prev, departement: params.departement }));
+      setPage(1);
+    }
+  }, [params?.capex, params?.departement]);
 
   useEffect(() => { load(); }, []);
 
@@ -149,6 +158,8 @@ export default function DemandesPage({ onNavigate, params, user }) {
 
   function resetFilters() {
     setFilters(DEFAULT_FILTERS);
+    setDateFrom("");
+    setDateTo("");
     setPage(1);
   }
 
@@ -180,7 +191,12 @@ export default function DemandesPage({ onNavigate, params, user }) {
 
   // Options disponibles pour chaque filtre de colonne, dérivées des demandes chargées
   const demandeurOptions = textOptions(demandes, (d) => d.utilisateurNom);
-  const capexOptions = textOptions(demandes, (d) => d.capexNom);
+  const baseCapexOptions = textOptions(demandes, (d) => d.capexNom);
+  const capexOptions = [
+    { value: "Avec Capex", label: "Avec Capex" },
+    { value: "Sans Capex", label: "Sans Capex" },
+    ...baseCapexOptions,
+  ];
   const departementOptions = textOptions(demandes, (d) => d.departementNom || d.DepartementNom);
   const rfxOptions = textOptions(demandes, (d) => d.rFx || d.RFX);
   const statutOptions = STATUTS.map((s) => ({ value: s, label: STATUT_LABELS[s] }));
@@ -191,10 +207,23 @@ export default function DemandesPage({ onNavigate, params, user }) {
   const financeOptions = dateOptions(demandes, (d) => d.dateValidateFinance);
   const directeurOptions = dateOptions(demandes, (d) => d.dateValidateDirecteur);
 
-  const activeFiltersCount = Object.values(filters).filter((v) => v !== "Tous").length;
+  const activeFiltersCount = Object.values(filters).filter((v) => v !== "Tous").length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   const filtered = demandes
     .filter((d) => {
+      // intervalle dates sur Créée le – même logique que SuiviCapex
+      if (dateFrom || dateTo) {
+        const t = d.createAt ? new Date(d.createAt) : null;
+        if (!t || isNaN(t.getTime())) return false;
+        if (dateFrom) {
+          const fromD = new Date(dateFrom + "T00:00:00");
+          if (t < fromD) return false;
+        }
+        if (dateTo) {
+          const toD = new Date(dateTo + "T23:59:59.999");
+          if (t > toD) return false;
+        }
+      }
       const s = String(d.statut || "");
       const norm = s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const isRefuse = norm.includes("refus");
@@ -205,7 +234,12 @@ export default function DemandesPage({ onNavigate, params, user }) {
       return dNorm === fNorm || s === filters.statut;
     })
     .filter((d) => filters.demandeur === "Tous" || d.utilisateurNom === filters.demandeur)
-    .filter((d) => filters.capex === "Tous" || d.capexNom === filters.capex)
+    .filter((d) => {
+      if (filters.capex === "Tous") return true;
+      if (filters.capex === "Sans Capex") return !d.capexNom;
+      if (filters.capex === "Avec Capex") return !!d.capexNom;
+      return d.capexNom === filters.capex;
+    })
     .filter((d) => filters.departement === "Tous" || (d.departementNom || d.DepartementNom) === filters.departement)
     .filter((d) => filters.rfx === "Tous" || (d.rFx || d.RFX) === filters.rfx)
     .filter((d) => filters.createAt === "Tous" || formatDate(d.createAt) === filters.createAt)
@@ -403,6 +437,33 @@ export default function DemandesPage({ onNavigate, params, user }) {
           >
             <Download className="size-4" /> Exporter
           </button>
+        </div>
+
+        {/* Filtre date intervalle – même design que SuiviCapex */}
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Calendar className="size-4" />
+            <span className="hidden sm:inline">Période (Créée le)</span>
+            <span className="sm:hidden">Période</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            <span className="px-1 text-sm font-semibold text-muted-foreground">→</span>
+            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+                className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                Effacer
+              </button>
+            )}
+          </div>
+          {(dateFrom || dateTo) && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {filtered.length} résultat{filtered.length !== 1 ? "s" : ""} sur {demandes.length}
+            </span>
+          )}
         </div>
       </div>
 

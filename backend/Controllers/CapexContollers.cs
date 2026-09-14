@@ -29,9 +29,9 @@ public class CapexController : ControllerBase
     }
 
     [HttpGet("{id}/consommation-departements")]
-public async Task<IActionResult> GetConsommation(int id)
+public async Task<IActionResult> GetConsommation(int id, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
 {
-    var result = await _service.GetConsommationAsync(id);
+    var result = await _service.GetConsommationAsync(id, from, to);
     return result is null ? NotFound() : Ok(result);
 }
 }

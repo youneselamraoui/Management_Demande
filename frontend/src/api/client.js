@@ -68,8 +68,13 @@ export const validerDemande = (id) => request(`/demandes/${id}/valider`, { metho
 export const refuserDemande = (id) => request(`/demandes/${id}/refuser`, { method: "PUT" });
 export const getUtilisateurs = () => request("/utilisateurs");
 export const getCapex = () => request("/capex");
-export const getConsommationCapex = (Id) =>
-  request(`/capex/${Id}/consommation-departements`);
+export const getConsommationCapex = (Id, from, to) => {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const q = params.toString() ? `?${params}` : "";
+  return request(`/capex/${Id}/consommation-departements${q}`);
+};
 export const getBonCommandes = () => request("/boncommandes");
 export const createBonCommande = (data) =>
   request("/boncommandes", { method: "POST", body: JSON.stringify(data) });

@@ -3,6 +3,7 @@ import {
   ClipboardList,
   BarChart3,
   FileText,
+  Building2,
   Settings,
   ShieldCheck,
   HelpCircle,
@@ -19,6 +20,7 @@ import logo from "../assets/img/ECI_logo1.png";
 const MENU_ITEMS = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { key: "demandes", label: "Suivi demandes d'achat", icon: ClipboardList },
+  { key: "repartition", label: "Demandes par département", icon: Building2 },
   { key: "suivi", label: "Suivi Capex", icon: BarChart3 },
   { key: "boncommandes", label: "Bons de commande", icon: FileText },
 ];
