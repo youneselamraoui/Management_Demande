@@ -63,13 +63,29 @@ public class DemandeService : IDemandeService
                 throw new BusinessException($"Prix invalide pour '{ligne.Article}'.");
         }
 
+        var now = DateTime.UtcNow;
         var entity = new EfDemande
         {
             UtilisateurId = dto.UtilisateurId,
             CapexId = dto.CapexId,
             RFX = dto.RFX,
+            Commentaire = dto.Commentaire,
+            MontantReserve = dto.MontantReserve,
+            CheminDevis = dto.CheminDevis,
+            CheminSAP = dto.CheminSAP,
+            CheminFinance = dto.CheminFinance,
+            FichierPath = dto.FichierPath,
+            Justification = dto.Justification,
+            Sta1 = dto.Sta1,
+            Sta2 = dto.Sta2,
+            Stc = dto.Stc,
+            Stf = dto.Stf,
+            Std = dto.Std,
+            Stu = dto.Stu,
+            Stp = dto.Stp,
             Statut = StatutDemande.EnAttenteValidationAchat1,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
         foreach (var a in dto.Articles)
@@ -97,7 +113,22 @@ public class DemandeService : IDemandeService
             CapexId = entity.CapexId,
             CapexNom = capex?.NomCapex ?? string.Empty,
             RFX = entity.RFX,
+            Commentaire = entity.Commentaire,
             CreatedAt = entity.CreatedAt,
+            UpdatedAt = entity.UpdatedAt,
+            MontantReserve = entity.MontantReserve,
+            CheminDevis = entity.CheminDevis,
+            CheminSAP = entity.CheminSAP,
+            CheminFinance = entity.CheminFinance,
+            FichierPath = entity.FichierPath,
+            Justification = entity.Justification,
+            Sta1 = entity.Sta1,
+            Sta2 = entity.Sta2,
+            Stc = entity.Stc,
+            Stf = entity.Stf,
+            Std = entity.Std,
+            Stu = entity.Stu,
+            Stp = entity.Stp,
             DateValidationAchat1 = entity.DateValidationAchat1,
             DateValidationAchat2 = entity.DateValidationAchat2,
             DateValidateChef = entity.DateValidateChef,
@@ -116,7 +147,22 @@ public class DemandeService : IDemandeService
         CapexId = entity.CapexId,
         CapexNom = entity.Capex?.NomCapex ?? string.Empty,
         RFX = entity.RFX,
+        Commentaire = entity.Commentaire,
         CreatedAt = entity.CreatedAt,
+        UpdatedAt = entity.UpdatedAt,
+        MontantReserve = entity.MontantReserve,
+        CheminDevis = entity.CheminDevis,
+        CheminSAP = entity.CheminSAP,
+        CheminFinance = entity.CheminFinance,
+        FichierPath = entity.FichierPath,
+        Justification = entity.Justification,
+        Sta1 = entity.Sta1,
+        Sta2 = entity.Sta2,
+        Stc = entity.Stc,
+        Stf = entity.Stf,
+        Std = entity.Std,
+        Stu = entity.Stu,
+        Stp = entity.Stp,
         DateValidationAchat1 = entity.DateValidationAchat1,
         DateValidationAchat2 = entity.DateValidationAchat2,
         DateValidateChef = entity.DateValidateChef,
@@ -139,6 +185,7 @@ public class DemandeService : IDemandeService
 
     var montant = demande.DetailDemandes.Sum(dd => dd.Quantite * (dd.Prix ?? 0));
     var maintenant = DateTime.UtcNow;
+    demande.UpdatedAt = maintenant;
 
     // Chaque validation renseigne sa date puis fait avancer la demande vers l'étape suivante.
     switch (demande.Statut)
@@ -213,6 +260,7 @@ public async Task<Demande> RefuserDemandeAsync(int id)
         throw new BusinessException("Cette demande ne peut plus être refusée.");
 
     var maintenant = DateTime.UtcNow;
+    demande.UpdatedAt = maintenant;
     demande.Statut = demande.Statut switch
     {
         StatutDemande.EnAttenteValidationAchat1 => RefuserAchat1(demande, maintenant),

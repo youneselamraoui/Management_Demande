@@ -18,10 +18,19 @@ GO
 
 CREATE TABLE [Utilisateurs] (
     [Id] int NOT NULL IDENTITY,
-    [Nom] nvarchar(200) NOT NULL,
+    [Nom] nvarchar(max) NOT NULL,
+    [Email] nvarchar(max) NOT NULL,
+    [MotDePasse] nvarchar(max) NOT NULL,
+    [Role] nvarchar(max) NOT NULL,
     [DepartementID] int NOT NULL,
+    [ChefId] int NULL,
+    [Active] bit NOT NULL DEFAULT 1,
+    [DoitChangerMotDePasse] bit NULL,
+    [EmailChef] nvarchar(max) NULL,
+    [NomChef] nvarchar(max) NULL,
     CONSTRAINT [PK__Utilisat__3214EC075DBA5179] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_Utilisateur_Departement] FOREIGN KEY ([DepartementID]) REFERENCES [Departements] ([Id])
+    CONSTRAINT [FK_Utilisateur_Departement] FOREIGN KEY ([DepartementID]) REFERENCES [Departements] ([Id]),
+    CONSTRAINT [FK_Utilisateur_Chef] FOREIGN KEY ([ChefId]) REFERENCES [Utilisateurs] ([Id])
 );
 GO
 
@@ -29,17 +38,32 @@ GO
 CREATE TABLE [Demandes] (
     [Id] int NOT NULL IDENTITY,
     [UtilisateurId] int NOT NULL,
-    [Statut] nvarchar(50) NOT NULL,
-    [Id] int NOT NULL,
-    [RFX] nvarchar(50) NULL,
+    [Statut] nvarchar(max) NOT NULL,
+    [CapexId] int NULL,
+    [RFX] nvarchar(max) NULL,
+    [Commentaire] nvarchar(max) NULL,
     [CreatedAt] datetime2 NOT NULL,
+    [UpdatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE(),
     [DateValidationAchat1] datetime2 NULL,
     [DateValidationAchat2] datetime2 NULL,
+    [MontantReserve] float NULL,
+    [CheminDevis] nvarchar(max) NULL,
+    [CheminSAP] nvarchar(max) NULL,
+    [CheminFinance] nvarchar(max) NULL,
+    [FichierPath] nvarchar(max) NULL,
+    [Justification] nvarchar(max) NULL,
     [DateValidateChef] datetime2 NULL,
     [DateValidateFinance] datetime2 NULL,
     [DateValidateDirecteur] datetime2 NULL,
+    [sta1] int NULL,
+    [sta2] int NULL,
+    [stc] int NULL,
+    [stf] int NULL,
+    [std] int NULL,
+    [stu] int NULL,
+    [stp] int NULL,
     CONSTRAINT [PK__Demande__8CE9A8CAB33538E6] PRIMARY KEY ([Id]),
-    CONSTRAINT [FK_Demande_Capex] FOREIGN KEY ([Id]) REFERENCES [Capexes] ([Id]),
+    CONSTRAINT [FK_Demande_Capex] FOREIGN KEY ([CapexId]) REFERENCES [Capexes] ([Id]),
     CONSTRAINT [FK_Demande_Utilisateur] FOREIGN KEY ([UtilisateurId]) REFERENCES [Utilisateurs] ([Id])
 );
 GO

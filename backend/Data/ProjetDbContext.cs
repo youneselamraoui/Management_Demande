@@ -42,6 +42,14 @@ public partial class ProjetDbContext : DbContext
             entity.ToTable("Demandes");
 
             entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+            entity.Property(e => e.Commentaire).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.MontantReserve).HasColumnType("float");
+            entity.Property(e => e.CheminDevis).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.CheminSAP).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.CheminFinance).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.FichierPath).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Justification).HasColumnType("nvarchar(max)");
 
             entity.Property(e => e.Statut)
                 .HasConversion(
@@ -76,9 +84,18 @@ public partial class ProjetDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Utilisat__3214EC075DBA5179");
             entity.ToTable("Utilisateurs");
+            entity.Property(e => e.Nom).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Email).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(e => e.MotDePasse).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Role).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Active).IsRequired();
             entity.HasOne(d => d.Departement).WithMany(p => p.Utilisateurs)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Utilisateur_Departement");
+            entity.HasOne(d => d.Chef).WithMany(p => p.Subordonnes)
+                .HasForeignKey(d => d.ChefId)
+                .OnDelete(DeleteBehavior.NoAction)
+                .HasConstraintName("FK_Utilisateur_Chef");
         });
 
         OnModelCreatingPartial(modelBuilder);

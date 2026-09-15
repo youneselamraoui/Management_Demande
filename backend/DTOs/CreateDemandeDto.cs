@@ -10,6 +10,20 @@ public class CreateDemandeDto
     public string? RFX { get; set; }
     [JsonIgnore]
     public string? RFx { get => RFX; set => RFX = value; }
+    public string? Commentaire { get; set; }
+    public double? MontantReserve { get; set; }
+    public string? CheminDevis { get; set; }
+    public string? CheminSAP { get; set; }
+    public string? CheminFinance { get; set; }
+    public string? FichierPath { get; set; }
+    public string? Justification { get; set; }
+    public int? Sta1 { get; set; }
+    public int? Sta2 { get; set; }
+    public int? Stc { get; set; }
+    public int? Stf { get; set; }
+    public int? Std { get; set; }
+    public int? Stu { get; set; }
+    public int? Stp { get; set; }
     public List<CreateLigneArticleDto> Articles { get; set; } = new();
 }
 

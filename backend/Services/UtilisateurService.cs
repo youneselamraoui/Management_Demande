@@ -44,7 +44,15 @@ public class UtilisateurService : IUtilisateurService
         var entity = new EfUtilisateur
         {
             Nom = dto.Nom,
-            DepartementId = dto.DepartementID
+            Email = string.IsNullOrWhiteSpace(dto.Email) ? $"{dto.Nom}@local" : dto.Email,
+            MotDePasse = dto.MotDePasse ?? string.Empty,
+            Role = string.IsNullOrWhiteSpace(dto.Role) ? "User" : dto.Role,
+            DepartementId = dto.DepartementID,
+            ChefId = dto.ChefId,
+            Active = dto.Active,
+            DoitChangerMotDePasse = dto.DoitChangerMotDePasse,
+            EmailChef = dto.EmailChef,
+            NomChef = dto.NomChef
         };
 
         _context.Utilisateurs.Add(entity);
@@ -54,7 +62,14 @@ public class UtilisateurService : IUtilisateurService
         {
             Id = entity.Id,
             Nom = entity.Nom,
+            Email = entity.Email,
+            Role = entity.Role,
             DepartementID = entity.DepartementId,
+            ChefId = entity.ChefId,
+            Active = entity.Active,
+            DoitChangerMotDePasse = entity.DoitChangerMotDePasse,
+            EmailChef = entity.EmailChef,
+            NomChef = entity.NomChef,
             DepartementNom = departement.Nom
         };
     }
@@ -63,7 +78,14 @@ public class UtilisateurService : IUtilisateurService
     {
         Id = entity.Id,
         Nom = entity.Nom,
+        Email = entity.Email,
+        Role = entity.Role,
         DepartementID = entity.DepartementId,
+        ChefId = entity.ChefId,
+        Active = entity.Active,
+        DoitChangerMotDePasse = entity.DoitChangerMotDePasse,
+        EmailChef = entity.EmailChef,
+        NomChef = entity.NomChef,
         DepartementNom = entity.Departement?.Nom ?? string.Empty
     };
 }

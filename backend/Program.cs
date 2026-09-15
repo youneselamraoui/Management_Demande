@@ -87,6 +87,37 @@ UPDATE Demandes SET Statut='Refusé achat1' WHERE Statut='RefuseeAchat1';
 UPDATE Demandes SET Statut='Refusé chef' WHERE Statut='RefuseeChef';
 ";
         try { db.Database.ExecuteSqlRaw(renameSql); Console.WriteLine("[DB] Renommage verifie"); } catch (Exception ex) { Console.WriteLine($"[DB] Rename warning: {ex.Message}"); }
+
+        // --- Alignement photo SSMS : dbo.Utilisateurs / dbo.Demandes ---
+        // NOTE : ADD puis UPDATE séparés (SQL Server parse tout le batch avant exécution,
+        // donc UPDATE référençant une colonne ajoutée dans le même batch => Msg 207).
+        var alignAddSql = @"
+IF COL_LENGTH('Utilisateurs','Email') IS NULL ALTER TABLE [Utilisateurs] ADD [Email] nvarchar(max) NOT NULL DEFAULT '';
+IF COL_LENGTH('Utilisateurs','MotDePasse') IS NULL ALTER TABLE [Utilisateurs] ADD [MotDePasse] nvarchar(max) NOT NULL DEFAULT '';
+IF COL_LENGTH('Utilisateurs','Role') IS NULL ALTER TABLE [Utilisateurs] ADD [Role] nvarchar(max) NOT NULL DEFAULT 'User';
+IF COL_LENGTH('Utilisateurs','ChefId') IS NULL ALTER TABLE [Utilisateurs] ADD [ChefId] int NULL;
+IF COL_LENGTH('Utilisateurs','Active') IS NULL ALTER TABLE [Utilisateurs] ADD [Active] bit NOT NULL DEFAULT 1;
+IF COL_LENGTH('Utilisateurs','DoitChangerMotDePasse') IS NULL ALTER TABLE [Utilisateurs] ADD [DoitChangerMotDePasse] bit NULL;
+IF COL_LENGTH('Utilisateurs','EmailChef') IS NULL ALTER TABLE [Utilisateurs] ADD [EmailChef] nvarchar(max) NULL;
+IF COL_LENGTH('Utilisateurs','NomChef') IS NULL ALTER TABLE [Utilisateurs] ADD [NomChef] nvarchar(max) NULL;
+IF COL_LENGTH('Demandes','Commentaire') IS NULL ALTER TABLE [Demandes] ADD [Commentaire] nvarchar(max) NULL;
+IF COL_LENGTH('Demandes','UpdatedAt') IS NULL ALTER TABLE [Demandes] ADD [UpdatedAt] datetime2 NOT NULL DEFAULT GETUTCDATE();
+IF COL_LENGTH('Demandes','MontantReserve') IS NULL ALTER TABLE [Demandes] ADD [MontantReserve] float NULL;
+IF COL_LENGTH('Demandes','CheminDevis') IS NULL ALTER TABLE [Demandes] ADD [CheminDevis] nvarchar(max) NULL;
+IF COL_LENGTH('Demandes','CheminSAP') IS NULL ALTER TABLE [Demandes] ADD [CheminSAP] nvarchar(max) NULL;
+IF COL_LENGTH('Demandes','CheminFinance') IS NULL ALTER TABLE [Demandes] ADD [CheminFinance] nvarchar(max) NULL;
+IF COL_LENGTH('Demandes','FichierPath') IS NULL ALTER TABLE [Demandes] ADD [FichierPath] nvarchar(max) NULL;
+IF COL_LENGTH('Demandes','Justification') IS NULL ALTER TABLE [Demandes] ADD [Justification] nvarchar(max) NULL;
+IF COL_LENGTH('Demandes','sta1') IS NULL ALTER TABLE [Demandes] ADD [sta1] int NULL;
+IF COL_LENGTH('Demandes','sta2') IS NULL ALTER TABLE [Demandes] ADD [sta2] int NULL;
+IF COL_LENGTH('Demandes','stc') IS NULL ALTER TABLE [Demandes] ADD [stc] int NULL;
+IF COL_LENGTH('Demandes','stf') IS NULL ALTER TABLE [Demandes] ADD [stf] int NULL;
+IF COL_LENGTH('Demandes','std') IS NULL ALTER TABLE [Demandes] ADD [std] int NULL;
+IF COL_LENGTH('Demandes','stu') IS NULL ALTER TABLE [Demandes] ADD [stu] int NULL;
+IF COL_LENGTH('Demandes','stp') IS NULL ALTER TABLE [Demandes] ADD [stp] int NULL;
+";
+        try { db.Database.ExecuteSqlRaw(alignAddSql); Console.WriteLine("[DB] Alignement ADD verifie (photo SSMS)"); } catch (Exception ex) { Console.WriteLine($"[DB] Align ADD warning: {ex.Message}"); }
+        try { db.Database.ExecuteSqlRaw("UPDATE [Demandes] SET [UpdatedAt] = [CreatedAt] WHERE [UpdatedAt] IS NULL;"); Console.WriteLine("[DB] Alignement backfill UpdatedAt OK"); } catch (Exception ex) { Console.WriteLine($"[DB] Align backfill warning: {ex.Message}"); }
     } catch (Exception ex) { Console.WriteLine($"[DB] Rename outer: {ex.Message}"); }
 }
 
