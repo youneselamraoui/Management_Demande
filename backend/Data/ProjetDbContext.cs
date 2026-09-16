@@ -80,6 +80,12 @@ public partial class ProjetDbContext : DbContext
                 .HasConstraintName("FK_DetailDemande_Demande");
         });
 
+        modelBuilder.Entity<BonCommande>(entity =>
+        {
+            entity.Property(e => e.Po).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.CheminFinance).HasColumnType("nvarchar(max)");
+        });
+
         modelBuilder.Entity<Utilisateur>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Utilisat__3214EC075DBA5179");

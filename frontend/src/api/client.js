@@ -38,8 +38,9 @@ function normalizeConsommation(co) {
 }
 
 async function request(path, options = {}) {
+  const isFormData = options.body instanceof FormData;
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: isFormData ? undefined : { "Content-Type": "application/json" },
     ...options,
   });
   if (!res.ok) {
@@ -78,3 +79,16 @@ export const getConsommationCapex = (Id, from, to) => {
 export const getBonCommandes = () => request("/boncommandes");
 export const createBonCommande = (data) =>
   request("/boncommandes", { method: "POST", body: JSON.stringify(data) });
+export const updateBonCommandeCheminFinance = (id, cheminFinance) =>
+  request(`/boncommandes/${id}/chemin-finance`, { method: "PUT", body: JSON.stringify({ cheminFinance }) });
+export const uploadBonCommandeCheminFinance = (id, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request(`/boncommandes/${id}/chemin-finance/upload`, { method: "POST", body: formData });
+};
+export const fileUrl = (path) => {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = API_URL.replace(/\/api$/, "");
+  return `${base}${path}`;
+};

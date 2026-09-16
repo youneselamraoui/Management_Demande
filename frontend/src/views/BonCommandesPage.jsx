@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { Search, FileText, Calendar, Truck, Hash, ChevronRight, X, Download } from "lucide-react";
-import { getBonCommandes, getDetailsDemande } from "../api/client";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { Search, FileText, Calendar, Hash, ChevronRight, X, Download, Upload } from "lucide-react";
+import { fileUrl, getBonCommandes, getDetailsDemande, uploadBonCommandeCheminFinance } from "../api/client";
 import DatePicker from "../components/ui/DatePicker";
 import { createPortal } from "react-dom";
 import { exportToExcel, formatDateExcel } from "../utils/exportExcel";
@@ -10,6 +10,8 @@ const PAGE_SIZE = 10;
 const DEFAULT_FILTERS = { po: "Tous", dateCreation: "Tous", fournisseur: "Tous" };
 
 function formatDate(v) { return v ? new Date(v).toLocaleDateString("fr-FR") : "—"; }
+function getBonCommandeId(b) { return b.id ?? b.Id; }
+function getCheminFinance(b) { return b.cheminFinance ?? b.CheminFinance ?? ""; }
 function textOptions(list, getValue) {
   const set = new Set();
   list.forEach((item) => { const v = getValue(item); if (v) set.add(v); });
@@ -42,6 +44,8 @@ export default function BonCommandesPage() {
   const [showExport, setShowExport] = useState(false);
   const [includeDetails, setIncludeDetails] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [savingPaths, setSavingPaths] = useState({});
+  const [pathErrors, setPathErrors] = useState({});
 
   async function toggleExpand(demandeId) {
     if (expandedId === demandeId) { setExpandedId(null); return; }
@@ -65,6 +69,21 @@ export default function BonCommandesPage() {
   }, []);
 
   function updateFilter(key, value) { setFilters((prev) => ({ ...prev, [key]: value })); setPage(1); }
+
+  async function uploadCheminFinance(b, file) {
+    if (!file) return;
+    const bonCommandeId = getBonCommandeId(b);
+    setSavingPaths((prev) => ({ ...prev, [bonCommandeId]: true }));
+    setPathErrors((prev) => ({ ...prev, [bonCommandeId]: null }));
+    try {
+      const updated = await uploadBonCommandeCheminFinance(bonCommandeId, file);
+      setData((prev) => prev.map((item) => getBonCommandeId(item) === bonCommandeId ? { ...item, ...updated } : item));
+    } catch (e) {
+      setPathErrors((prev) => ({ ...prev, [bonCommandeId]: e.message }));
+    } finally {
+      setSavingPaths((prev) => ({ ...prev, [bonCommandeId]: false }));
+    }
+  }
 
   const poOptions = textOptions(data, (b) => b.po ?? b.Po);
   const fournisseurOptions = textOptions(data, (b) => b.fournisseurNom ?? b.FournisseurNom);
@@ -111,12 +130,14 @@ export default function BonCommandesPage() {
         PO: b.po ?? b.Po ?? "",
         DateCreation: formatDateExcel(b.dateCreation ?? b.DateCreation),
         Fournisseur: b.fournisseurNom ?? b.FournisseurNom ?? "",
+        CheminFinance: getCheminFinance(b),
       }));
       const columns = [
         { header: "DemandeId", key: "DemandeId" },
         { header: "PO", key: "PO" },
         { header: "DateCreation", key: "DateCreation" },
         { header: "Fournisseur", key: "Fournisseur" },
+        { header: "CheminFinance", key: "CheminFinance" },
       ];
       const sheets = [{ name: "Bons de commande", rows, columns }];
       if (includeDetails) {
@@ -247,7 +268,7 @@ export default function BonCommandesPage() {
       {!loading && !error && (
         <div className="mt-6 overflow-hidden rounded-2xl border border-border">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px] text-sm">
+            <table className="w-full min-w-[980px] text-sm">
               <thead>
                 <tr className="bg-muted text-left text-xs text-muted-foreground">
                   <th className="w-8 px-4 py-3" />
@@ -255,37 +276,74 @@ export default function BonCommandesPage() {
                   <ColumnFilterHeader label="PO" options={poOptions} selected={filters.po} onChange={(v) => updateFilter("po", v)} />
                   <ColumnFilterHeader label="DateCreation" options={dateCreationOptions} selected={filters.dateCreation} onChange={(v) => updateFilter("dateCreation", v)} />
                   <ColumnFilterHeader label="Fournisseur" options={fournisseurOptions} selected={filters.fournisseur} onChange={(v) => updateFilter("fournisseur", v)} />
+                  <th className="px-4 py-3 font-medium"><span className="flex items-center gap-1.5"><FileText className="size-3.5" /> PDF finance</span></th>
                 </tr>
               </thead>
               <tbody>
                 {pageItems.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Aucun bon de commande trouvé.</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Aucun bon de commande trouvé.</td>
                   </tr>
                 ) : (
                   pageItems.map((b) => {
                     const demandeId = b.demandeId ?? b.DemandeId;
+                    const bonCommandeId = getBonCommandeId(b);
                     const expanded = expandedId === demandeId;
                     const details = detailsCache[demandeId];
+                    const cheminValue = getCheminFinance(b);
                     return (
-                      <>
-                        <tr key={b.id ?? b.Id} onClick={() => toggleExpand(demandeId)} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50">
+                      <Fragment key={bonCommandeId}>
+                        <tr onClick={() => toggleExpand(demandeId)} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/50">
                           <td className="px-4 py-3 text-center"><ChevronRight className={`size-4 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`} /></td>
                           <td className="px-4 py-3.5 font-semibold">#{demandeId}</td>
                           <td className="px-4 py-3.5">{b.po ?? b.Po ?? "—"}</td>
                           <td className="px-4 py-3.5 text-muted-foreground">{b.dateCreation ?? b.DateCreation ? new Date(b.dateCreation ?? b.DateCreation).toLocaleDateString("fr-FR") : "—"}</td>
                           <td className="px-4 py-3.5">{b.fournisseurNom ?? b.FournisseurNom ?? "—"}</td>
+                          <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex min-w-[300px] flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted">
+                                  <Upload className="size-4" />
+                                  {savingPaths[bonCommandeId] ? "Upload..." : "Uploader PDF"}
+                                  <input
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    className="hidden"
+                                    disabled={savingPaths[bonCommandeId]}
+                                    onChange={(e) => {
+                                      uploadCheminFinance(b, e.target.files?.[0]);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+                                {cheminValue ? (
+                                  <a
+                                    href={fileUrl(cheminValue)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="min-w-0 flex-1 truncate text-xs font-medium text-primary hover:underline"
+                                    title={cheminValue}
+                                  >
+                                    {cheminValue}
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Aucun fichier</span>
+                                )}
+                              </div>
+                            </div>
+                            {pathErrors[bonCommandeId] && <p className="mt-1 text-xs text-destructive">{pathErrors[bonCommandeId]}</p>}
+                          </td>
                         </tr>
                         {expanded && (
                           <tr>
-                            <td colSpan={5} className="bg-muted/40 px-6 py-4">
+                            <td colSpan={6} className="bg-muted/40 px-6 py-4">
                               {(!details) ? <p className="text-sm text-muted-foreground">Chargement des articles...</p>
                                 : details.error ? <p className="text-sm text-destructive">{details.error}</p>
                                 : <BonCommandeDetails details={details} />}
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })
                 )}

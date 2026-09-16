@@ -41,6 +41,7 @@ public class BonCommandeService : IBonCommandeService
         {
             DemandeId = dto.DemandeId,
             Po = dto.Po,
+            CheminFinance = dto.CheminFinance,
             FournisseurId = dto.FournisseurId,
             DateCreation = DateTime.UtcNow
         };
@@ -50,11 +51,26 @@ public class BonCommandeService : IBonCommandeService
         return Map(entity);
     }
 
+    public async Task<BonCommandeDto> UpdateCheminFinanceAsync(int id, string? cheminFinance)
+    {
+        var entity = await _context.BonCommandes
+            .Include(b => b.Fournisseur)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (entity is null) throw new BusinessException($"Bon de commande {id} introuvable.");
+
+        entity.CheminFinance = string.IsNullOrWhiteSpace(cheminFinance) ? null : cheminFinance.Trim();
+        await _context.SaveChangesAsync();
+
+        return Map(entity);
+    }
+
     private static BonCommandeDto Map(EfBonCommande e) => new()
     {
         Id = e.Id,
         DemandeId = e.DemandeId,
         Po = e.Po,
+        CheminFinance = e.CheminFinance,
         DateCreation = e.DateCreation,
         FournisseurId = e.FournisseurId,
         FournisseurNom = e.Fournisseur?.Nom ?? string.Empty,

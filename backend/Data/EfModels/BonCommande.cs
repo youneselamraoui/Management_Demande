@@ -10,6 +10,7 @@ public class BonCommande
     [Key] public int Id { get; set; }
     public int DemandeId { get; set; }
     [Column(TypeName = "nvarchar(max)")] public string? Po { get; set; }
+    [Column(TypeName = "nvarchar(max)")] public string? CheminFinance { get; set; }
     public DateTime DateCreation { get; set; } = DateTime.UtcNow;
     public int FournisseurId { get; set; }
     [ForeignKey(nameof(DemandeId))] public virtual Demande Demande { get; set; } = null!;
