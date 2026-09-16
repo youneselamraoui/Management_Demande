@@ -3,17 +3,11 @@ using backend.Services.Interfaces;
 using backend.Data.EfModels;
 using Microsoft.EntityFrameworkCore;
 
-var basePath = AppContext.BaseDirectory;
-var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory()) ?? FindProjectRoot(basePath);
-var webRootPath = projectRoot is null
-    ? Path.Combine(basePath, "wwwroot")
-    : Path.Combine(projectRoot, "wwwroot");
-
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
     Args = args,
-    ContentRootPath = basePath,
-    WebRootPath = webRootPath
+    ContentRootPath = AppContext.BaseDirectory,
+    WebRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot")
 });
 
 builder.Services.AddControllers()
@@ -121,7 +115,6 @@ IF COL_LENGTH('Demandes','stf') IS NULL ALTER TABLE [Demandes] ADD [stf] int NUL
 IF COL_LENGTH('Demandes','std') IS NULL ALTER TABLE [Demandes] ADD [std] int NULL;
 IF COL_LENGTH('Demandes','stu') IS NULL ALTER TABLE [Demandes] ADD [stu] int NULL;
 IF COL_LENGTH('Demandes','stp') IS NULL ALTER TABLE [Demandes] ADD [stp] int NULL;
-IF OBJECT_ID('BonCommandes') IS NOT NULL AND COL_LENGTH('BonCommandes','CheminFinance') IS NULL ALTER TABLE [BonCommandes] ADD [CheminFinance] nvarchar(max) NULL;
 ";
         try { db.Database.ExecuteSqlRaw(alignAddSql); Console.WriteLine("[DB] Alignement ADD verifie (photo SSMS)"); } catch (Exception ex) { Console.WriteLine($"[DB] Align ADD warning: {ex.Message}"); }
         try { db.Database.ExecuteSqlRaw("UPDATE [Demandes] SET [UpdatedAt] = [CreatedAt] WHERE [UpdatedAt] IS NULL;"); Console.WriteLine("[DB] Alignement backfill UpdatedAt OK"); } catch (Exception ex) { Console.WriteLine($"[DB] Align backfill warning: {ex.Message}"); }
@@ -202,15 +195,3 @@ var url = app.Configuration["ASPNETCORE_URLS"] ?? "http://localhost:5058";
 Console.WriteLine($"[APP] Capex Manager pret sur {url}");
 Console.WriteLine($"[APP] Swagger: {url}/swagger");
 app.Run();
-
-static string? FindProjectRoot(string startPath)
-{
-    var directory = Directory.Exists(startPath) ? new DirectoryInfo(startPath) : Directory.GetParent(startPath);
-    while (directory is not null)
-    {
-        if (File.Exists(Path.Combine(directory.FullName, "backend.csproj")))
-            return directory.FullName;
-        directory = directory.Parent;
-    }
-    return null;
-}
