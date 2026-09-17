@@ -1,4 +1,3 @@
-// Models/Utilisateur.cs — miroir de dbo.Utilisateurs (photo SSMS)
 namespace backend.Models;
 
 public class Utilisateurs

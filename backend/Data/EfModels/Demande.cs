@@ -14,7 +14,6 @@ public partial class Demande
     [Column("Id")]
     public int Id { get; set; }
 
-    // Compat : ancien PK idDemande -> proxy vers Id
     [NotMapped]
     public int IdDemande { get => Id; set => Id = value; }
 

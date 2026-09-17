@@ -1,4 +1,3 @@
-// Models/Departement.cs
 namespace backend.Models;
 
 public class Departements

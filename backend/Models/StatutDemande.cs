@@ -1,4 +1,3 @@
-// Models/StatutDemande.cs
 namespace backend.Models;
 
 public enum StatutDemande
