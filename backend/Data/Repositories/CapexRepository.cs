@@ -97,18 +97,26 @@ public class CapexRepository : ICapexRepository
     using var connection = _connectionFactory.CreateConnection();
     await connection.OpenAsync();
 
+    // Inclut désormais BonDeCommande + toutes les demandes en attente (engagé)
     using var command = new SqlCommand(@"
         SELECT dep.Nom AS DepartementNom, SUM(dd.Quantite * ISNULL(dd.Prix,0)) AS MontantConsomme
         FROM Demande d
         INNER JOIN Utilisateur u ON d.UtilisateurId = u.Id
         INNER JOIN Departement dep ON u.DepartementID = dep.Id
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
-        WHERE d.Id = @Id AND d.Statut = @Statut
+        WHERE d.Id = @Id AND d.Statut IN (
+            @StatutBon, @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutFinanceConf, @StatutDirecteur)
         GROUP BY dep.Nom
         ORDER BY MontantConsomme DESC", connection);
 
     command.Parameters.AddWithValue("@Id", Id);
-    command.Parameters.AddWithValue("@Statut", StatutDemande.BonDeCommande.ToString());
+    command.Parameters.AddWithValue("@StatutBon", StatutDemande.BonDeCommande.ToString());
+    command.Parameters.AddWithValue("@StatutAchat1", StatutDemande.EnAttenteValidationAchat1.ToString());
+    command.Parameters.AddWithValue("@StatutAchat2", StatutDemande.EnAttenteValidationAchat2.ToString());
+    command.Parameters.AddWithValue("@StatutChef", StatutDemande.EnAttenteValidationChef.ToString());
+    command.Parameters.AddWithValue("@StatutFinance", StatutDemande.EnAttenteValidationFinance.ToString());
+    command.Parameters.AddWithValue("@StatutFinanceConf", StatutDemande.EnAttenteConfirmationFinance.ToString());
+    command.Parameters.AddWithValue("@StatutDirecteur", StatutDemande.EnAttenteValidationDirecteur.ToString());
     
     using var reader = await command.ExecuteReaderAsync();
     while (await reader.ReadAsync())
@@ -133,13 +141,14 @@ public async Task<double> GetMontantEnAttenteAsync(int Id)
         FROM Demande d
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
         WHERE d.Id = @Id AND d.Statut IN (
-            @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutDirecteur)", connection);
+            @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutFinanceConf, @StatutDirecteur)", connection);
 
     command.Parameters.AddWithValue("@Id", Id);
     command.Parameters.AddWithValue("@StatutAchat1", StatutDemande.EnAttenteValidationAchat1.ToString());
     command.Parameters.AddWithValue("@StatutAchat2", StatutDemande.EnAttenteValidationAchat2.ToString());
     command.Parameters.AddWithValue("@StatutChef", StatutDemande.EnAttenteValidationChef.ToString());
     command.Parameters.AddWithValue("@StatutFinance", StatutDemande.EnAttenteValidationFinance.ToString());
+    command.Parameters.AddWithValue("@StatutFinanceConf", StatutDemande.EnAttenteConfirmationFinance.ToString());
     command.Parameters.AddWithValue("@StatutDirecteur", StatutDemande.EnAttenteValidationDirecteur.ToString());
 
     var val = await command.ExecuteScalarAsync();

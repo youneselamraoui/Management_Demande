@@ -138,14 +138,24 @@ using (var scope = app.Services.CreateScope())
         var capexes = db.Capexes.ToList();
         foreach (var c in capexes)
         {
+            var statutsEngages = new[]
+            {
+                backend.Models.StatutDemande.BonDeCommande,
+                backend.Models.StatutDemande.EnAttenteValidationAchat1,
+                backend.Models.StatutDemande.EnAttenteValidationAchat2,
+                backend.Models.StatutDemande.EnAttenteValidationChef,
+                backend.Models.StatutDemande.EnAttenteValidationFinance,
+                backend.Models.StatutDemande.EnAttenteConfirmationFinance,
+                backend.Models.StatutDemande.EnAttenteValidationDirecteur
+            };
             var consomme = db.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == c.Id && dd.Demande.Statut == backend.Models.StatutDemande.BonDeCommande)
+                .Where(dd => dd.Demande.CapexId == c.Id && statutsEngages.Contains(dd.Demande.Statut))
                 .Sum(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             var reste = c.BudgetTotal - consomme;
             if (c.BudgetRestant != reste) c.BudgetRestant = reste;
         }
         db.SaveChanges();
-        Console.WriteLine("[DB] BudgetRestant recalcule");
+        Console.WriteLine("[DB] BudgetRestant recalcule (incluant en attente)");
         // Assurer un fournisseur par défaut et backfill BonCommandes pour les demandes déjà en BonDeCommande
         try
         {

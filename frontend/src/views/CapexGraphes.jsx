@@ -53,11 +53,11 @@ function CapexGraphes() {
 
 const budgetTotal = consommation?.budgetTotal ?? 0;
 const parDepartement = consommation?.parDepartement ?? [];
-const totalConsomme = parDepartement.reduce((sum, d) => sum + d.montantConsomme, 0);
+const totalConsomme = parDepartement.reduce((sum, d) => sum + d.montantConsomme, 0); // engagé = Bon de commande + en attente
 const resteBudget = budgetTotal - totalConsomme; 
 
-  // Chaque part du cercle = un département consommé.
-  // On ajoute une part "Reste budget" pour visualiser ce qui n'est pas encore consommé.
+  // Chaque part du cercle = un département engagé (incluant en attente).
+  // On ajoute une part "Reste budget" pour visualiser ce qui n'est pas encore engagé.
   const chartData = [
     ...parDepartement.map((d) => ({
       name: d.departementNom,
@@ -100,11 +100,11 @@ const resteBudget = budgetTotal - totalConsomme;
               <Card className="shadow-sm h-100">
                 <Card.Body>
                   <Card.Title as="h4" className="mb-1">
-                    Répartition de la consommation
+                    Répartition de l'engagement
                   </Card.Title>
                   <Card.Subtitle className="text-muted mb-3">
                     {consommation.nomCapex} — Budget total :{" "}
-                    {budgetTotal.toLocaleString("fr-FR")} $
+                    {budgetTotal.toLocaleString("fr-FR")} $ (engagé : Bon de commande + en attente)
                   </Card.Subtitle>
 
                   {chartData.length === 0 ? (
@@ -156,7 +156,7 @@ const resteBudget = budgetTotal - totalConsomme;
 
                   {parDepartement.length === 0 ? (
                     <p className="text-muted">
-                      Aucune demande validée sur ce Capex pour l'instant.
+                      Aucune demande engagée sur ce Capex pour l'instant.
                     </p>
                   ) : (
                     <ul className="list-unstyled">

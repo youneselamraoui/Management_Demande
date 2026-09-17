@@ -147,7 +147,7 @@ function ConsommationCapex() {
 
                   <div className="text-start">
                     <div className="d-flex justify-content-between small mb-1">
-                      <span>Consommé : {consomme.toLocaleString("fr-FR")} $</span>
+                      <span>Engagé : {consomme.toLocaleString("fr-FR")} $</span>
                       <span>{pctConsomme.toFixed(1)}%</span>
                     </div>
                     <ProgressBar
@@ -170,7 +170,7 @@ function ConsommationCapex() {
                     Détail par département
                   </Card.Title>
                   <Card.Subtitle className="text-muted mb-3">
-                    Montants validés (statut : validé directeur)
+                    Montants engagés (Bon de commande + en attente)
                   </Card.Subtitle>
 
                   <Table hover responsive size="sm">
@@ -185,7 +185,7 @@ function ConsommationCapex() {
                       {parDepartement.length === 0 ? (
                         <tr>
                           <td colSpan={3} className="text-center text-muted">
-                            Aucune demande validée sur ce Capex pour l'instant.
+                            Aucune demande engagée sur ce Capex pour l'instant.
                           </td>
                         </tr>
                       ) : (

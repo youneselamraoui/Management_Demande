@@ -99,11 +99,13 @@ export default function SuiviCapex() {
     return <p className="text-muted-foreground">Chargement...</p>;
   }
 
-  const totalConsommeReel = data.parDepartement.reduce((sum, d) => sum + d.montantConsomme, 0);
-  const consomme = totalConsommeReel;
-  const resteBudgetReel = data.budgetTotal - totalConsommeReel;
+  // total engagé = Bon de commande + en attente (les en attente sont désormais inclus dans parDepartement)
+  const totalEngage = data.parDepartement.reduce((sum, d) => sum + d.montantConsomme, 0);
+  const consomme = totalEngage;
+  const resteBudgetReel = data.budgetTotal - totalEngage;
   const pctConsomme = data.budgetTotal > 0 ? (consomme / data.budgetTotal) * 100 : 0;
-  const previsionnel = consomme + data.montantEnAttente;
+  const montantValide = Math.max(0, totalEngage - (data.montantEnAttente ?? 0));
+  const previsionnel = totalEngage; // engagé = déjà consommé + en attente, plus de double comptage
 
   const highlighted = data ? data.parDepartement.slice(0, 2) : [];
 
@@ -230,13 +232,13 @@ export default function SuiviCapex() {
         <div className="rounded-2xl border border-border p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-bold">Répartition de la consommation</h2>
+              <h2 className="font-bold">Répartition de l'engagement</h2>
               <p className="text-xs text-muted-foreground">
-                {data.nomCapex} — Budget total : {data.budgetTotal.toLocaleString("fr-FR")} $
+                {data.nomCapex} — Budget total : {data.budgetTotal.toLocaleString("fr-FR")} $ (engagé : Bon de commande + en attente)
               </p>
             </div>
             <span className="rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
-              {pctConsomme.toFixed(0)}% Consommé
+              {pctConsomme.toFixed(0)}% Engagé
             </span>
           </div>
 
@@ -282,7 +284,7 @@ export default function SuiviCapex() {
             <Info className="mt-0.5 size-4 shrink-0" />
             <div>
               <strong className="block text-foreground">Aperçu budgétaire</strong>
-              La consommation totale est de {pctConsomme.toFixed(0)}% sur ce Capex. Le reste à engager
+              L'engagement total est de {pctConsomme.toFixed(0)}% sur ce Capex (dont {montantValide.toLocaleString("fr-FR")} $ validés et {(data.montantEnAttente ?? 0).toLocaleString("fr-FR")} $ en attente). Le reste à engager
               s'élève à {resteBudgetReel.toLocaleString("fr-FR")} $.
             </div>
           </div>
@@ -343,17 +345,18 @@ export default function SuiviCapex() {
           {data.montantEnAttente > 0 && (
             <div className="mt-3 rounded-xl bg-muted p-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <TrendingUp className="size-4" /> Projections
+                <TrendingUp className="size-4" /> Détail de l'engagement
               </div>
-              <div className="mt-2.5 flex justify-between text-sm">
-                <span>Prévisionnel (consommé + en attente)</span>
-                <span>{previsionnel.toLocaleString("fr-FR")} $</span>
+              <div className="mt-2.5 space-y-1 text-sm">
+                <div className="flex justify-between"><span>Validé (Bon de commande)</span><span>{montantValide.toLocaleString("fr-FR")} $</span></div>
+                <div className="flex justify-between"><span>En attente</span><span>{(data.montantEnAttente ?? 0).toLocaleString("fr-FR")} $</span></div>
+                <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1"><span>Total engagé</span><span>{previsionnel.toLocaleString("fr-FR")} $</span></div>
               </div>
               <div className="mt-2">
                 <ProgressBar percent={data.budgetTotal > 0 ? (previsionnel / data.budgetTotal) * 100 : 0} color="var(--color-primary)" />
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                Estimation basée sur les demandes en cours de validation.
+                L'engagé inclut désormais les demandes en attente (réservation budgétaire).
               </div>
             </div>
           )}

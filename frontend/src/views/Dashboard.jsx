@@ -29,11 +29,12 @@ export default function Dashboard() {
       const consos = await Promise.all(capexes.map((c) => getConsommationCapex(c.Id)));
       setConsoByCapex(consos);
 
-      const isBon = (s) => {
-        const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        return n === "bon de commande" || n === "bondecommande";
+      const isEngage = (s) => {
+        const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+        // Engagé = Bon de commande + toutes les demandes en attente (réservation budgétaire)
+        return n === "bondecommande" || n === "boncommande" || (n.includes("enattente") && !n.includes("refus"));
       };
-      const accepted = dem.filter((d) => isBon(d.statut));
+      const accepted = dem.filter((d) => isEngage(d.statut));
       const details = await Promise.all(accepted.map((d) => getDetailsDemande(d.idDemande).catch(() => [])));
 
       const byMonth = {};
@@ -112,7 +113,7 @@ export default function Dashboard() {
 
       <section className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Budget Total" value={`${budgetTotal.toLocaleString("fr-FR")} $`} icon={<CreditCard className="size-4" />} footnote="Alloué pour l'année en cours" />
-        <StatCard label="Consommé" value={`${totalConsomme.toLocaleString("fr-FR")} $`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} />
+        <StatCard label="Engagé" value={`${totalConsomme.toLocaleString("fr-FR")} $`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} footnote="Bon de commande + en attente" />
         <StatCard
             label="Reste Budget"
             value={`${resteBudget.toLocaleString("fr-FR")} $`}
@@ -126,7 +127,7 @@ export default function Dashboard() {
       <section className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-border p-6 lg:col-span-2">
           <h2 className="font-bold">Tendance mensuelle</h2>
-          <p className="text-xs text-muted-foreground">Montant consommé (demandes approuvées) sur 12 mois</p>
+          <p className="text-xs text-muted-foreground">Montant engagé (Bon de commande + en attente) sur 12 mois</p>
           <div className="mt-4 h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyTrend} margin={{ left: 0, right: 8, top: 8 }}>
