@@ -78,7 +78,14 @@ public class DemandeService : IDemandeService
                 StatutDemande.EnAttenteValidationDirecteur
             };
             var engage = await _context.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == dto.CapexId && statutsEngages.Contains(dd.Demande.Statut))
+                .Where(dd => dd.Demande.CapexId == dto.CapexId && (
+                    dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
                 .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             if (capex.BudgetTotal - engage < montantNouveau)
                 throw new BusinessException($"Budget restant insuffisant pour ce Capex. Restant engagé: {capex.BudgetTotal - engage} $, demandé: {montantNouveau} $.");
@@ -140,7 +147,14 @@ public class DemandeService : IDemandeService
                     StatutDemande.EnAttenteValidationDirecteur
                 };
                 var engageUpdate = await _context.DetailDemandes
-                    .Where(dd => dd.Demande.CapexId == dto.CapexId && statutsEngagesUpdate.Contains(dd.Demande.Statut))
+                    .Where(dd => dd.Demande.CapexId == dto.CapexId && (
+                        dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
                     .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
                 capexEnt.BudgetRestant = capexEnt.BudgetTotal - engageUpdate;
                 await _context.SaveChangesAsync();
@@ -269,7 +283,14 @@ public class DemandeService : IDemandeService
                     StatutDemande.EnAttenteValidationDirecteur
                 };
                 var engage = await _context.DetailDemandes
-                    .Where(dd => dd.Demande.CapexId == demande.CapexId && statutsEngages.Contains(dd.Demande.Statut))
+                    .Where(dd => dd.Demande.CapexId == demande.CapexId && (
+                        dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
                     .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
                 // engage inclut déjà cette demande (en attente), donc reste = BudgetTotal - engage
                 var reste = demande.Capex.BudgetTotal - engage;
@@ -349,7 +370,14 @@ public async Task<Demande> RefuserDemandeAsync(int id)
             StatutDemande.EnAttenteValidationDirecteur
         };
         var engage = await _context.DetailDemandes
-            .Where(dd => dd.Demande.CapexId == demande.CapexId && statutsEngages.Contains(dd.Demande.Statut))
+            .Where(dd => dd.Demande.CapexId == demande.CapexId && (
+                dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
             .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
         demande.Capex!.BudgetRestant = demande.Capex.BudgetTotal - engage;
         await _context.SaveChangesAsync();
@@ -411,7 +439,14 @@ private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
         foreach (var c in capexes)
         {
             var consomme = await _context.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == c.Id && statutsEngages.Contains(dd.Demande.Statut))
+                .Where(dd => dd.Demande.CapexId == c.Id && (
+                    dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
                 .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }

@@ -88,9 +88,7 @@ UPDATE Demandes SET Statut='Refusé chef' WHERE Statut='RefuseeChef';
 ";
         try { db.Database.ExecuteSqlRaw(renameSql); Console.WriteLine("[DB] Renommage verifie"); } catch (Exception ex) { Console.WriteLine($"[DB] Rename warning: {ex.Message}"); }
 
-        // --- Alignement photo SSMS : dbo.Utilisateurs / dbo.Demandes ---
         // NOTE : ADD puis UPDATE séparés (SQL Server parse tout le batch avant exécution,
-        // donc UPDATE référençant une colonne ajoutée dans le même batch => Msg 207).
         var alignAddSql = @"
 IF COL_LENGTH('Utilisateurs','Email') IS NULL ALTER TABLE [Utilisateurs] ADD [Email] nvarchar(max) NOT NULL DEFAULT '';
 IF COL_LENGTH('Utilisateurs','MotDePasse') IS NULL ALTER TABLE [Utilisateurs] ADD [MotDePasse] nvarchar(max) NOT NULL DEFAULT '';
@@ -149,7 +147,14 @@ using (var scope = app.Services.CreateScope())
                 backend.Models.StatutDemande.EnAttenteValidationDirecteur
             };
             var consomme = db.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == c.Id && statutsEngages.Contains(dd.Demande.Statut))
+                .Where(dd => dd.Demande.CapexId == c.Id && (
+                    dd.Demande.Statut == backend.Models.StatutDemande.BonDeCommande ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationAchat1 ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationAchat2 ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationChef ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationFinance ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteConfirmationFinance ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationDirecteur))
                 .Sum(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             var reste = c.BudgetTotal - consomme;
             if (c.BudgetRestant != reste) c.BudgetRestant = reste;
@@ -185,7 +190,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex) { Console.WriteLine($"[DB] Init warning: {ex.Message}"); }
 }
-
+    
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

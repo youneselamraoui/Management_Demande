@@ -45,9 +45,18 @@ public class CapexService : ICapexService
 
     private async Task<double> CalculateResteBudgetAsync(int Id, double budgetTotal)
     {
+        // FIX SQL 102 near '$': StatutsEngages.Contains() génère OPENJSON('$') incompatible SQL < 2016
+        // On remplace par OR explicite traduisible en IN sans OPENJSON
         var consomme = await _context.DetailDemandes
             .AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == Id && StatutsEngages.Contains(dd.Demande.Statut))
+            .Where(dd => dd.Demande.CapexId == Id && (
+                dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
             .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
         return budgetTotal - consomme;
     }
@@ -58,7 +67,14 @@ public class CapexService : ICapexService
         foreach (var c in capexes)
         {
             var consomme = await _context.DetailDemandes
-                .Where(dd => dd.Demande.CapexId == c.Id && StatutsEngages.Contains(dd.Demande.Statut))
+                .Where(dd => dd.Demande.CapexId == c.Id && (
+                    dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
                 .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }
@@ -91,19 +107,37 @@ public class CapexService : ICapexService
 
         // Consommation = BonDeCommande + toutes les demandes en attente (engagé / réservé)
         var parDepartementQuery = _context.DetailDemandes.AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == Id && StatutsEngages.Contains(dd.Demande.Statut));
+            .Where(dd => dd.Demande.CapexId == Id && (
+                dd.Demande.Statut == StatutDemande.BonDeCommande ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur));
         if (from != null) parDepartementQuery = parDepartementQuery.Where(dd => dd.Demande.CreatedAt >= from);
         if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); parDepartementQuery = parDepartementQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
 
-        var parDepartement = await parDepartementQuery
-            .GroupBy(dd => dd.Demande.Utilisateur.Departement.Nom)
+        // FIX IIS 500: GroupBy sur navigation profonde (Utilisateur.Departement) échoue en traduction SQL
+        // si 1 ligne orpheline (Utilisateur/Departement null) -> on matérialise puis group en mémoire
+        var rawParDept = await parDepartementQuery
+            .Select(dd => new
+            {
+                DeptNom = dd.Demande.Utilisateur.Departement != null
+                    ? dd.Demande.Utilisateur.Departement.Nom : "Inconnu",
+                Montant = dd.Quantite * (dd.Prix ?? 0)
+            })
+            .ToListAsync();
+
+        var parDepartement = rawParDept
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.DeptNom) ? "Inconnu" : x.DeptNom)
             .Select(g => new ConsommationDepartementDto
             {
                 DepartementNom = g.Key,
-                MontantConsomme = g.Sum(dd => dd.Quantite * (dd.Prix ?? 0))
+                MontantConsomme = g.Sum(x => x.Montant)
             })
             .OrderByDescending(x => x.MontantConsomme)
-            .ToListAsync();
+            .ToList();
 
         var statutsEnAttente = new[]
         {
@@ -116,12 +150,25 @@ public class CapexService : ICapexService
         };
 
         var enAttenteQuery = _context.DetailDemandes.AsNoTracking()
-            .Where(dd => dd.Demande.CapexId == Id && statutsEnAttente.Contains(dd.Demande.Statut));
+            .Where(dd => dd.Demande.CapexId == Id && (
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur));
         if (from != null) enAttenteQuery = enAttenteQuery.Where(dd => dd.Demande.CreatedAt >= from);
         if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); enAttenteQuery = enAttenteQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
         var montantEnAttente = await enAttenteQuery.SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
 
-        var resteCalculeQuery = _context.DetailDemandes.AsNoTracking().Where(dd => dd.Demande.CapexId == Id && StatutsEngages.Contains(dd.Demande.Statut));
+        var resteCalculeQuery = _context.DetailDemandes.AsNoTracking().Where(dd => dd.Demande.CapexId == Id && (
+            dd.Demande.Statut == StatutDemande.BonDeCommande ||
+            dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat1 ||
+            dd.Demande.Statut == StatutDemande.EnAttenteValidationAchat2 ||
+            dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
+            dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
+            dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
+            dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur));
         if (from != null) resteCalculeQuery = resteCalculeQuery.Where(dd => dd.Demande.CreatedAt >= from);
         if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); resteCalculeQuery = resteCalculeQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
         var consommeFiltre = await resteCalculeQuery.SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
