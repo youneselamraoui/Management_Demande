@@ -74,9 +74,9 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
               <ShoppingCart size={18} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">Nouvelle demande d'achat</h2>
+              <h2 className="text-lg font-bold text-foreground">New purchase request</h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Remplissez les détails pour soumettre votre investissement.
+                Fill in the details to submit your investment.
               </p>
             </div>
           </div>
@@ -89,11 +89,11 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Champs principaux */}
+          {/* Main fields */}
           <div className="mb-5 grid grid-cols-1 gap-3.5 border-b border-border pb-5 sm:grid-cols-3">
             <div>
               <label className={labelClass}>
-                <User size={13} /> Demandeur
+                <User size={13} /> Requester
               </label>
               <select
                 required
@@ -101,28 +101,28 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
                 value={form.utilisateurId}
                 onChange={(e) => setForm({ ...form, utilisateurId: e.target.value })}
               >
-                <option value="" disabled>Sélectionner</option>
+                <option value="" disabled>Select</option>
                 {utilisateurs.map((u) => <option key={u.id} value={u.id}>{u.nom}</option>)}
               </select>
             </div>
 
             <div>
               <label className={labelClass}>
-                <Calendar size={13} /> Capex (Période) <span className="font-normal text-muted-foreground">(optionnel)</span>
+                <Calendar size={13} /> Capex (Period) <span className="font-normal text-muted-foreground">(optional)</span>
               </label>
               <select
                 className={selectClass}
                 value={form.capexId}
                 onChange={(e) => setForm({ ...form, capexId: e.target.value })}
               >
-                <option value="">— Aucun (vide)</option>
+                <option value="">— None (empty)</option>
                 {capexList.map((c) => <option key={c.id ?? c.Id ?? c.capexId} value={c.id ?? c.Id ?? c.capexId}>{c.nomCapex}</option>)}
               </select>
             </div>
 
             <div>
               <label className={labelClass}>
-                <FileText size={13} /> RFx (optionnel)
+                <FileText size={13} /> RFx (optional)
               </label>
               <input
                 type="text"
@@ -134,10 +134,10 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
             </div>
           </div>
 
-          {/* Articles */}
+          {/* Items */}
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2 text-[15px] font-bold text-foreground">
-              Articles
+              Items
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
                 {lignes.length}
               </span>
@@ -147,7 +147,7 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
               onClick={addLigne}
               className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              <Plus size={14} /> Ajouter une ligne
+              <Plus size={14} /> Add line
             </button>
           </div>
 
@@ -156,16 +156,16 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
               <thead>
                 <tr>
                   <th className="px-1.5 pb-1.5 text-left text-[11px] font-semibold text-muted-foreground">
-                    Article / Désignation
+                    Item / Description
                   </th>
                   <th className="w-16 px-1.5 pb-1.5 text-left text-[11px] font-semibold text-muted-foreground">
-                    Qté
+                    Qty
                   </th>
                   <th className="w-28 px-1.5 pb-1.5 text-left text-[11px] font-semibold text-muted-foreground">
-                    Prix Unitaire
+                    Unit Price
                   </th>
                   <th className="w-28 px-1.5 pb-1.5 text-left text-[11px] font-semibold text-muted-foreground">
-                    Réf. Devis
+                    Quote Ref.
                   </th>
                   <th className="w-8" />
                 </tr>
@@ -177,7 +177,7 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
                       <input
                         required
                         type="text"
-                        placeholder="Nom de l'article"
+                        placeholder="Item name"
                         value={l.article}
                         onChange={(e) => updateLigne(i, "article", e.target.value)}
                         className={inputClass}
@@ -198,7 +198,7 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
                         type="number"
                         min="0"
                         step="0.01"
-                        placeholder="— (vide)"
+                        placeholder="— (empty)"
                         value={l.prix}
                         onChange={(e) => updateLigne(i, "prix", e.target.value)}
                         className={inputClass}
@@ -207,7 +207,7 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
                     <td className="px-1.5 py-1">
                       <input
                         type="text"
-                        placeholder="Réf. devis"
+                        placeholder="Quote ref."
                         value={l.devis}
                         onChange={(e) => updateLigne(i, "devis", e.target.value)}
                         className={inputClass}
@@ -233,10 +233,10 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
           {/* Total */}
           <div className="mb-4 text-right">
             <div className="text-sm text-muted-foreground">
-              Nombre d'articles : <strong className="text-foreground">{lignes.length}</strong>
+              Number of items: <strong className="text-foreground">{lignes.length}</strong>
             </div>
             <div className="mt-1 text-xl font-bold text-primary">
-              Total estimé : {total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} $
+              Estimated total: {total.toLocaleString("en-US", { minimumFractionDigits: 2 })} $
             </div>
           </div>
 
@@ -244,9 +244,9 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
           <div className="mb-5 flex gap-3 rounded-xl bg-accent px-4 py-3 text-sm text-accent-foreground">
             <Info size={16} className="mt-0.5 shrink-0" />
             <div>
-              <strong className="block">Vérification de conformité</strong>
-              Cette demande sera soumise à l'approbation du département finance. Assurez-vous
-              d'avoir joint les devis correspondants aux références saisies.
+              <strong className="block">Compliance check</strong>
+              This request will be submitted for finance department approval. Please ensure
+              you have attached the corresponding quotes for the entered references.
             </div>
           </div>
 
@@ -259,14 +259,14 @@ export default function CreateDemandeModal({ onClose, onCreated }) {
               onClick={onClose}
               className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              Annuler
+              Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              <CheckCircle2 size={16} /> {submitting ? "Création..." : "Créer la demande"}
+              <CheckCircle2 size={16} /> {submitting ? "Creating..." : "Create request"}
             </button>
           </div>
         </form>

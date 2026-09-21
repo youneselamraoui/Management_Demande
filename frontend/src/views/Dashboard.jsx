@@ -7,7 +7,7 @@ import { StatCard, StatutBadge, Avatar } from "../components/ui/Primitives";
 import logo from "../assets/img/logo.png";
 
 
-const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DEPT_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)"];
 
 export default function Dashboard() {
@@ -63,7 +63,7 @@ export default function Dashboard() {
     return <p className="text-destructive">{error}</p>;
   }
   if (loading) {
-    return <p className="text-muted-foreground">Chargement...</p>;
+    return <p className="text-muted-foreground">Loading...</p>;
   }
 
   const budgetTotal = consoByCapex.reduce((s, c) => s + (c?.budgetTotal || 0), 0);
@@ -71,13 +71,22 @@ export default function Dashboard() {
     (s, c) => s + (c?.parDepartement || []).reduce((s2, d) => s2 + d.montantConsomme, 0),
     0
   );
+  const totalEnAttente = consoByCapex.reduce((s, c) => s + (c?.montantEnAttente ?? c?.MontantEnAttente ?? 0), 0);
+  const totalValide = Math.max(0, totalConsomme - totalEnAttente);
   const resteBudget = budgetTotal - totalConsomme;
   const isEnAttente = (s) => {
     const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
     return n.includes("enattente") && !n.includes("refus");
   };
+  const isValide = (s) => {
+    const n = String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+    return n === "bondecommande" || n === "boncommande";
+  };
   const enAttenteCount = demandes.filter((d) => isEnAttente(d.statut)).length;
+  const valideCount = demandes.filter((d) => isValide(d.statut)).length;
   const pctRestant = budgetTotal > 0 ? (resteBudget / budgetTotal) * 100 : 0;
+  const pctValide = totalConsomme > 0 ? (totalValide / totalConsomme) * 100 : 0;
+  const pctEnAttente = totalConsomme > 0 ? (totalEnAttente / totalConsomme) * 100 : 0;
 
   const consommeTrend =
     monthlyTrend.length >= 2
@@ -106,28 +115,61 @@ export default function Dashboard() {
     <>
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Bienvenue, </h1>
-          <p className="mt-1 text-sm text-muted-foreground">Aperçu de vos Capex et demandes d'achat.</p>
+          <h1 className="text-2xl font-extrabold tracking-tight">Welcome,</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Overview of your Capex and purchase requests.</p>
         </div>
       </header>
 
       <section className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Budget Total" value={`${budgetTotal.toLocaleString("fr-FR")} $`} icon={<CreditCard className="size-4" />} footnote="Alloué pour l'année en cours" />
-        <StatCard label="Engagé" value={`${totalConsomme.toLocaleString("fr-FR")} $`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} footnote="Bon de commande + en attente" />
+        <StatCard label="Total Budget" value={`${budgetTotal.toLocaleString("en-US")} $`} icon={<CreditCard className="size-4" />} footnote="Allocated for current year" />
+        <StatCard label="Committed" value={`${totalConsomme.toLocaleString("en-US")} $`} icon={<TrendingDown className="size-4" />} trend={consommeTrend} footnote={`Approved ${totalValide.toLocaleString("en-US")} $ • Pending ${totalEnAttente.toLocaleString("en-US")} $`} />
         <StatCard
-            label="Reste Budget"
-            value={`${resteBudget.toLocaleString("fr-FR")} $`}
+            label="Remaining Budget"
+            value={`${resteBudget.toLocaleString("en-US")} $`}
             icon={<img src={logo} alt="logo" className="size-4 object-contain" />}
-            footnote={`${pctRestant.toFixed(0)}% disponible`}
+            footnote={`${pctRestant.toFixed(0)}% available`}
         />
 
-        <StatCard label="En attente" value={enAttenteCount} icon={<FileText className="size-4" />} footnote={`${demandes.length} demandes au total`} />
+        <StatCard label="Pending" value={enAttenteCount} icon={<FileText className="size-4" />} footnote={`${totalEnAttente.toLocaleString("en-US")} $ • ${demandes.length} total requests`} />
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-border p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-bold">Commitment Breakdown</h2>
+          <span className="text-xs text-muted-foreground">Consumption = Approved + Pending</span>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl bg-success-soft p-4">
+            <p className="text-xs font-semibold text-success">Approved (Purchase Order)</p>
+            <p className="mt-1 text-xl font-extrabold text-success">{totalValide.toLocaleString("en-US")} $</p>
+            <p className="text-xs text-muted-foreground">{valideCount} request{valideCount !== 1 ? "s" : ""} • {pctValide.toFixed(1)}% of committed</p>
+          </div>
+          <div className="rounded-xl bg-warning-soft p-4">
+            <p className="text-xs font-semibold text-warning">Pending (Reserved)</p>
+            <p className="mt-1 text-xl font-extrabold text-warning">{totalEnAttente.toLocaleString("en-US")} $</p>
+            <p className="text-xs text-muted-foreground">{enAttenteCount} request{enAttenteCount !== 1 ? "s" : ""} • {pctEnAttente.toFixed(1)}% of committed</p>
+          </div>
+          <div className="rounded-xl bg-muted p-4">
+            <p className="text-xs font-semibold text-muted-foreground">Total Committed (Consumption)</p>
+            <p className="mt-1 text-xl font-extrabold">{totalConsomme.toLocaleString("en-US")} $</p>
+            <p className="text-xs text-muted-foreground">{valideCount + enAttenteCount} committed requests • {budgetTotal > 0 ? ((totalConsomme / budgetTotal) * 100).toFixed(1) : 0}% of budget</p>
+          </div>
+        </div>
+        <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-muted flex">
+          <div className="h-full bg-success" style={{ width: `${pctValide}%` }} title={`Approved ${pctValide.toFixed(1)}%`} />
+          <div className="h-full bg-warning" style={{ width: `${pctEnAttente}%` }} title={`Pending ${pctEnAttente.toFixed(1)}%`} />
+        </div>
+        <div className="mt-2 flex gap-4 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-success" /> Approved</span>
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-warning" /> Pending</span>
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-muted border border-border" /> Remaining {resteBudget.toLocaleString("en-US")} $</span>
+        </div>
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-border p-6 lg:col-span-2">
-          <h2 className="font-bold">Tendance mensuelle</h2>
-          <p className="text-xs text-muted-foreground">Montant engagé (Bon de commande + en attente) sur 12 mois</p>
+          <h2 className="font-bold">Monthly Trend</h2>
+          <p className="text-xs text-muted-foreground">Committed amount (Purchase Order + Pending) over 12 months</p>
           <div className="mt-4 h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyTrend} margin={{ left: 0, right: 8, top: 8 }}>
@@ -144,11 +186,11 @@ export default function Dashboard() {
                     axisLine={false}
                     tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
                     width={64}
-                    tickFormatter={(v) => v.toLocaleString("fr-FR")}
+                    tickFormatter={(v) => v.toLocaleString("en-US")}
                     />
                     <Tooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid var(--color-border)", fontSize: 12 }}
-                    formatter={(v) => [`${v.toLocaleString("fr-FR")} $`, "Montant"]}
+                    formatter={(v) => [`${v.toLocaleString("en-US")} $`, "Amount"]}
                     />
                     <Area type="monotone" dataKey="value" stroke="var(--color-chart-1)" strokeWidth={2.5} fill="url(#trendFill)" dot={{ r: 3, fill: "var(--color-card)", strokeWidth: 2 }} />
                 </AreaChart>
@@ -158,7 +200,7 @@ export default function Dashboard() {
 
         <div className="rounded-2xl border border-border p-5">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold">Répartition</h2>
+            <h2 className="font-bold">Breakdown</h2>
             <MoreHorizontal className="size-4 text-muted-foreground" />
           </div>
           <div className="flex justify-center py-2">
@@ -171,7 +213,7 @@ export default function Dashboard() {
                 <li key={d.name} className="flex items-center gap-2 text-sm">
                   <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
                   <span className="flex-1 truncate text-muted-foreground">{d.name}</span>
-                  <span className="font-semibold">{d.value.toLocaleString("fr-FR")} $</span>
+                  <span className="font-semibold">{d.value.toLocaleString("en-US")} $</span>
                   <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">{pct.toFixed(0)}%</span>
                 </li>
               );
@@ -182,16 +224,16 @@ export default function Dashboard() {
 
       <section className="mt-6 rounded-2xl border border-border p-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold">Demandes récentes</h2>
+          <h2 className="font-bold">Recent Requests</h2>
           <button className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted" onClick={() => navigate("/demandes")}>
-            Voir tout
+            View all
           </button>
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="bg-muted text-left text-xs text-muted-foreground">
-                {["Demandeur", "Capex", "Statut", "RFx", "Créée le"].map((h) => (
+                {["Requester", "Capex", "Status", "RFx", "Created on"].map((h) => (
                   <th key={h} className="px-4 py-3 font-medium first:rounded-l-lg last:rounded-r-lg">{h}</th>
                 ))}
               </tr>
@@ -208,7 +250,7 @@ export default function Dashboard() {
                   <td className="px-4 py-4 text-muted-foreground">{d.capexNom}</td>
                   <td className="px-4 py-4"><StatutBadge statut={d.statut} /></td>
                   <td className="px-4 py-4 text-muted-foreground">{d.rFx || "—"}</td>
-                  <td className="px-4 py-4 text-muted-foreground">{new Date(d.createAt).toLocaleDateString("fr-FR")}</td>
+                  <td className="px-4 py-4 text-muted-foreground">{new Date(d.createAt).toLocaleDateString("en-US")}</td>
                 </tr>
               ))}
             </tbody>
@@ -257,10 +299,10 @@ function DonutRing({ data, total }) {
         );
       })}
       <text x="100" y="96" textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--color-foreground)">
-        {total.toLocaleString("fr-FR")}
+        {total.toLocaleString("en-US")}
       </text>
       <text x="100" y="118" textAnchor="middle" fontSize="12" fill="var(--color-muted-foreground)">
-        $ consommé
+        $ consumed
       </text>
     </svg>
   );

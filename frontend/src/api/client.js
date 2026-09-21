@@ -30,10 +30,16 @@ function normalizeCapex(c) {
 }
 function normalizeConsommation(co) {
   if (!co || typeof co !== 'object') return co;
-  const rb = co.resteBudget ?? co.budgetRestant ?? co.BudgetRestant;
+  const rb = co.resteBudget ?? co.budgetRestant ?? co.BudgetRestant ?? co.BudgetRestantStocke ?? co.budgetRestantStocke;
+  const me = co.montantEnAttente ?? co.MontantEnAttente ?? co.montantEnAttente ?? 0;
+  const bt = co.budgetTotal ?? co.BudgetTotal ?? 0;
+  const pd = co.parDepartement ?? co.ParDepartement ?? [];
   return {
     ...co,
+    budgetTotal: bt, BudgetTotal: bt,
+    montantEnAttente: me, MontantEnAttente: me,
     resteBudget: rb, budgetRestant: rb, ResteBudget: rb, BudgetRestant: rb,
+    parDepartement: pd, ParDepartement: pd,
   };
 }
 
@@ -86,6 +92,23 @@ export const uploadBonCommandeCheminFinance = (id, file) => {
   formData.append("file", file);
   return request(`/boncommandes/${id}/chemin-finance/upload`, { method: "POST", body: formData });
 };
+export const getFournisseurs = () => request("/fournisseurs");
+export const getFournisseurStats = (from, to) => {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const q = params.toString() ? `?${params}` : "";
+  return request(`/fournisseurs/stats${q}`);
+};
+export const getFournisseurStatsById = (id, from, to) => {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const q = params.toString() ? `?${params}` : "";
+  return request(`/fournisseurs/${id}/stats${q}`);
+};
+export const createFournisseur = (data) =>
+  request("/fournisseurs", { method: "POST", body: JSON.stringify(data) });
 export const fileUrl = (path) => {
   if (!path) return "";
   if (/^https?:\/\//i.test(path)) return path;

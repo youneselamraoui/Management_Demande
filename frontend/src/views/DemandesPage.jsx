@@ -35,36 +35,36 @@ const STATUTS = [
   "RefuseeDirecteur",
 ];
 const STATUT_LABELS = {
-  EnAttenteValidationAchat1: "En attente validation achat1",
-  EnAttenteValidationAchat2: "En attente validation achat2",
-  EnAttenteValidationChef: "En attente validation chef",
-  EnAttenteValidationFinance: "En attente validation finance",
-  EnAttenteConfirmationFinance: "En attente confirmation finance",
-  EnAttenteValidationDirecteur: "En attente validation directeur",
-  BonDeCommande: "Bon de commande",
-  RefuseeAchat1: "Refusé achat1",
-  RefuseeAchat2: "Refusé achat2",
-  RefuseeChef: "Refusé chef",
-  RefuseeFinance: "Refusé finance",
-  RefuseeDirecteur: "Refusé directeur",
+  EnAttenteValidationAchat1: "Pending purchase validation 1",
+  EnAttenteValidationAchat2: "Pending purchase validation 2",
+  EnAttenteValidationChef: "Pending manager validation",
+  EnAttenteValidationFinance: "Pending finance validation",
+  EnAttenteConfirmationFinance: "Pending finance confirmation",
+  EnAttenteValidationDirecteur: "Pending director validation",
+  BonDeCommande: "Purchase Order",
+  RefuseeAchat1: "Rejected purchase 1",
+  RefuseeAchat2: "Rejected purchase 2",
+  RefuseeChef: "Rejected by manager",
+  RefuseeFinance: "Rejected by finance",
+  RefuseeDirecteur: "Rejected by director",
 };
 
 const DEFAULT_FILTERS = {
-  demandeur: "Tous",
-  capex: "Tous",
-  departement: "Tous",
-  statut: "Tous",
-  rfx: "Tous",
-  createAt: "Tous",
-  achat1: "Tous",
-  achat2: "Tous",
-  chef: "Tous",
-  finance: "Tous",
-  directeur: "Tous",
+  demandeur: "All",
+  capex: "All",
+  departement: "All",
+  statut: "All",
+  rfx: "All",
+  createAt: "All",
+  achat1: "All",
+  achat2: "All",
+  chef: "All",
+  finance: "All",
+  directeur: "All",
 };
 
 function formatDate(v) {
-  return v ? new Date(v).toLocaleDateString("fr-FR") : "—";
+  return v ? new Date(v).toLocaleDateString("en-US") : "—";
 }
 
 // Options triées (alphabétique) pour une colonne texte : Demandeur, Capex, RFx...
@@ -75,7 +75,7 @@ function textOptions(list, getValue) {
     if (v) set.add(v);
   });
   return [...set]
-    .sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }))
+    .sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }))
     .map((v) => ({ value: v, label: v }));
 }
 
@@ -91,7 +91,7 @@ function dateOptions(list, getRaw) {
       return;
     }
     const d = new Date(raw);
-    const label = d.toLocaleDateString("fr-FR");
+    const label = d.toLocaleDateString("en-US");
     if (!map.has(label) || d.getTime() < map.get(label)) {
       map.set(label, d.getTime());
     }
@@ -99,7 +99,7 @@ function dateOptions(list, getRaw) {
   const options = [...map.entries()]
     .sort((a, b) => a[1] - b[1])
     .map(([label]) => ({ value: label, label }));
-  if (hasEmpty) options.push({ value: "—", label: "— (non renseigné)" });
+  if (hasEmpty) options.push({ value: "—", label: "— (not set)" });
   return options;
 }
 
@@ -196,8 +196,8 @@ export default function DemandesPage() {
   const demandeurOptions = textOptions(demandes, (d) => d.utilisateurNom);
   const baseCapexOptions = textOptions(demandes, (d) => d.capexNom);
   const capexOptions = [
-    { value: "Avec Capex", label: "Avec Capex" },
-    { value: "Sans Capex", label: "Sans Capex" },
+    { value: "With Capex", label: "With Capex" },
+    { value: "Without Capex", label: "Without Capex" },
     ...baseCapexOptions,
   ];
   const departementOptions = textOptions(demandes, (d) => d.departementNom || d.DepartementNom);
@@ -210,11 +210,11 @@ export default function DemandesPage() {
   const financeOptions = dateOptions(demandes, (d) => d.dateValidateFinance);
   const directeurOptions = dateOptions(demandes, (d) => d.dateValidateDirecteur);
 
-  const activeFiltersCount = Object.values(filters).filter((v) => v !== "Tous").length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+  const activeFiltersCount = Object.values(filters).filter((v) => v !== "All").length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   const filtered = demandes
     .filter((d) => {
-      // intervalle dates sur Créée le – même logique que SuiviCapex
+      // date interval on Created on – same logic as Capex Tracking
       if (dateFrom || dateTo) {
         const t = d.createAt ? new Date(d.createAt) : null;
         if (!t || isNaN(t.getTime())) return false;
@@ -230,27 +230,27 @@ export default function DemandesPage() {
       const s = String(d.statut || "");
       const norm = s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const isRefuse = norm.includes("refus");
-      if (filters.statut === "Tous") return !isRefuse;
-      // comparer en normalisé pour gérer "BonDeCommande" vs "Bon de commande" vs "En attente confirmation finance"
+      if (filters.statut === "All") return !isRefuse;
+      // compare normalized to handle "BonDeCommande" vs "Bon de commande" vs "En attente confirmation finance"
       const fNorm = String(filters.statut).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
       const dNorm = norm.replace(/\s+/g, "");
       return dNorm === fNorm || s === filters.statut;
     })
-    .filter((d) => filters.demandeur === "Tous" || d.utilisateurNom === filters.demandeur)
+    .filter((d) => filters.demandeur === "All" || d.utilisateurNom === filters.demandeur)
     .filter((d) => {
-      if (filters.capex === "Tous") return true;
-      if (filters.capex === "Sans Capex") return !d.capexNom;
-      if (filters.capex === "Avec Capex") return !!d.capexNom;
+      if (filters.capex === "All") return true;
+      if (filters.capex === "Without Capex") return !d.capexNom;
+      if (filters.capex === "With Capex") return !!d.capexNom;
       return d.capexNom === filters.capex;
     })
-    .filter((d) => filters.departement === "Tous" || (d.departementNom || d.DepartementNom) === filters.departement)
-    .filter((d) => filters.rfx === "Tous" || (d.rFx || d.RFX) === filters.rfx)
-    .filter((d) => filters.createAt === "Tous" || formatDate(d.createAt) === filters.createAt)
-    .filter((d) => filters.achat1 === "Tous" || formatDate(d.dateValidationAchat1) === filters.achat1)
-    .filter((d) => filters.achat2 === "Tous" || formatDate(d.dateValidationAchat2) === filters.achat2)
-    .filter((d) => filters.chef === "Tous" || formatDate(d.dateValidateChef) === filters.chef)
-    .filter((d) => filters.finance === "Tous" || formatDate(d.dateValidateFinance) === filters.finance)
-    .filter((d) => filters.directeur === "Tous" || formatDate(d.dateValidateDirecteur) === filters.directeur)
+    .filter((d) => filters.departement === "All" || (d.departementNom || d.DepartementNom) === filters.departement)
+    .filter((d) => filters.rfx === "All" || (d.rFx || d.RFX) === filters.rfx)
+    .filter((d) => filters.createAt === "All" || formatDate(d.createAt) === filters.createAt)
+    .filter((d) => filters.achat1 === "All" || formatDate(d.dateValidationAchat1) === filters.achat1)
+    .filter((d) => filters.achat2 === "All" || formatDate(d.dateValidationAchat2) === filters.achat2)
+    .filter((d) => filters.chef === "All" || formatDate(d.dateValidateChef) === filters.chef)
+    .filter((d) => filters.finance === "All" || formatDate(d.dateValidateFinance) === filters.finance)
+    .filter((d) => filters.directeur === "All" || formatDate(d.dateValidateDirecteur) === filters.directeur)
     .filter((d) => {
       const q = search.toLowerCase();
       if (!q) return true;
@@ -299,33 +299,33 @@ export default function DemandesPage() {
     try {
       const rows = filtered.map((d) => ({
         N: d.idDemande,
-        Demandeur: d.utilisateurNom,
+        Requester: d.utilisateurNom,
         Capex: d.capexNom,
-        Departement: d.departementNom || d.DepartementNom || "",
-        Statut: d.statut,
+        Department: d.departementNom || d.DepartementNom || "",
+        Status: d.statut,
         RFx: d.rFx || d.RFX || "",
-        CreeLe: formatDateExcel(d.createAt),
-        Achat1: formatDateExcel(d.dateValidationAchat1),
-        Achat2: formatDateExcel(d.dateValidationAchat2),
-        Chef: formatDateExcel(d.dateValidateChef),
+        CreatedOn: formatDateExcel(d.createAt),
+        Purchase1: formatDateExcel(d.dateValidationAchat1),
+        Purchase2: formatDateExcel(d.dateValidationAchat2),
+        Manager: formatDateExcel(d.dateValidateChef),
         Finance: formatDateExcel(d.dateValidateFinance),
-        Directeur: formatDateExcel(d.dateValidateDirecteur),
+        Director: formatDateExcel(d.dateValidateDirecteur),
       }));
       const columns = [
-        { header: "N°", key: "N" },
-        { header: "Demandeur", key: "Demandeur" },
+        { header: "No.", key: "N" },
+        { header: "Requester", key: "Requester" },
         { header: "Capex", key: "Capex" },
-        { header: "Département", key: "Departement" },
-        { header: "Statut", key: "Statut" },
+        { header: "Department", key: "Department" },
+        { header: "Status", key: "Status" },
         { header: "RFx", key: "RFx" },
-        { header: "Créée le", key: "CreeLe" },
-        { header: "Achat1", key: "Achat1" },
-        { header: "Achat2", key: "Achat2" },
-        { header: "Chef", key: "Chef" },
+        { header: "Created on", key: "CreatedOn" },
+        { header: "Purchase1", key: "Purchase1" },
+        { header: "Purchase2", key: "Purchase2" },
+        { header: "Manager", key: "Manager" },
         { header: "Finance", key: "Finance" },
-        { header: "Directeur", key: "Directeur" },
+        { header: "Director", key: "Director" },
       ];
-      const sheets = [{ name: "Demandes", rows, columns }];
+      const sheets = [{ name: "Requests", rows, columns }];
       if (includeDetails) {
         const allDetails = [];
         for (const d of filtered) {
@@ -335,35 +335,35 @@ export default function DemandesPage() {
           }
           if (Array.isArray(det) && det.length) {
             det.forEach((line) => allDetails.push({
-              Demande: d.idDemande,
-              Article: line.article,
-              Quantite: line.quantite,
-              PrixUnitaire: line.prix ?? "",
-              SousTotal: line.quantite * (line.prix ?? 0),
-              Devis: line.devis || "",
+              Request: d.idDemande,
+              Item: line.article,
+              Quantity: line.quantite,
+              UnitPrice: line.prix ?? "",
+              Subtotal: line.quantite * (line.prix ?? 0),
+              Quote: line.devis || "",
             }));
           } else if (Array.isArray(det) && !det.length) {
-            allDetails.push({ Demande: d.idDemande, Article: "Aucun article", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" });
+            allDetails.push({ Request: d.idDemande, Item: "No items", Quantity: "", UnitPrice: "", Subtotal: "", Quote: "" });
           }
         }
         sheets.push({
           name: "Details",
-          rows: allDetails.length ? allDetails : [{ Demande: "", Article: "Aucun article trouvé", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" }],
+          rows: allDetails.length ? allDetails : [{ Request: "", Item: "No items found", Quantity: "", UnitPrice: "", Subtotal: "", Quote: "" }],
           columns: [
-            { header: "Demande", key: "Demande" },
-            { header: "Article", key: "Article" },
-            { header: "Quantité", key: "Quantite" },
-            { header: "Prix unitaire", key: "PrixUnitaire" },
-            { header: "Sous-total", key: "SousTotal" },
-            { header: "Devis", key: "Devis" },
+            { header: "Request", key: "Request" },
+            { header: "Item", key: "Item" },
+            { header: "Quantity", key: "Quantity" },
+            { header: "Unit price", key: "UnitPrice" },
+            { header: "Subtotal", key: "Subtotal" },
+            { header: "Quote", key: "Quote" },
           ],
         });
       }
-      exportToExcel({ filename: `Demandes_${new Date().toISOString().slice(0,10)}`, sheets });
+      exportToExcel({ filename: `Requests_${new Date().toISOString().slice(0,10)}`, sheets });
       setShowExport(false);
     } catch (e) {
       console.error("Export error", e);
-      alert("Erreur export: " + e.message);
+      alert("Export error: " + e.message);
     } finally { setExporting(false); }
   }
 
@@ -372,9 +372,9 @@ export default function DemandesPage() {
       <div className="rounded-2xl border border-border p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Demandes d'achat</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight">Purchase Requests</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Gérez et suivez l'état de vos demandes d'investissement (Capex).
+              Manage and track the status of your investment requests (Capex).
             </p>
           </div>
           {/*
@@ -400,7 +400,7 @@ export default function DemandesPage() {
             <Search className="size-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher par N°, demandeur ou RFx..."
+              placeholder="Search by No., requester or RFx..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -411,24 +411,24 @@ export default function DemandesPage() {
             <button
               onClick={resetFilters}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm font-medium hover:bg-muted/70"
-              title="Réinitialiser tous les filtres"
+              title="Reset all filters"
             >
               <X className="size-3.5" />
-              Réinitialiser ({activeFiltersCount})
+              Reset ({activeFiltersCount})
             </button>
           )}
 
           <button
             className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted"
             onClick={() => setSortAsc((v) => !v)}
-            title="Trier par N°"
+            title="Sort by No."
           >
             <ArrowUpDown className="size-4" />
           </button>
           <button
             className="rounded-lg border border-border p-2.5 text-muted-foreground hover:bg-muted"
             onClick={() => setTableExpanded((v) => !v)}
-            title={tableExpanded ? "Réduire le tableau" : "Agrandir le tableau"}
+            title={tableExpanded ? "Collapse table" : "Expand table"}
           >
             {tableExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
           </button>
@@ -436,35 +436,35 @@ export default function DemandesPage() {
             className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50"
             onClick={() => setShowExport(true)}
             disabled={!filtered.length}
-            title="Exporter en Excel"
+            title="Export to Excel"
           >
-            <Download className="size-4" /> Exporter
+            <Download className="size-4" /> Export
           </button>
         </div>
 
-        {/* Filtre date intervalle – même design que SuiviCapex */}
+        {/* Date interval filter – same design as Capex Tracking */}
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Calendar className="size-4" />
-            <span className="hidden sm:inline">Période (Créée le)</span>
-            <span className="sm:hidden">Période</span>
+            <span className="hidden sm:inline">Period (Created on)</span>
+            <span className="sm:hidden">Period</span>
           </div>
           <div className="flex items-center gap-2">
-            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} placeholder="mm/dd/yyyy" />
             <span className="px-1 text-sm font-semibold text-muted-foreground">→</span>
-            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPage(1); }} placeholder="mm/dd/yyyy" />
             {(dateFrom || dateTo) && (
               <button
                 onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
                 className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                Effacer
+                Clear
               </button>
             )}
           </div>
           {(dateFrom || dateTo) && (
             <span className="ml-auto text-xs text-muted-foreground">
-              {filtered.length} résultat{filtered.length !== 1 ? "s" : ""} sur {demandes.length}
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""} of {demandes.length}
             </span>
           )}
         </div>
@@ -473,23 +473,23 @@ export default function DemandesPage() {
       {showExport && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onClick={() => setShowExport(false)}>
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold">Exporter en Excel</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Exporte {filtered.length} demande(s) filtrée(s) — compatible Excel.</p>
+            <h3 className="font-bold">Export to Excel</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Exports {filtered.length} filtered request(s) — Excel compatible.</p>
             <label className="mt-4 flex items-center gap-2 text-sm">
               <input type="checkbox" checked={includeDetails} onChange={(e) => setIncludeDetails(e.target.checked)} className="size-4 rounded border-border" />
-              Inclure les détails (Article, Quantité, Prix, Sous-total, Devis)
+              Include details (Item, Quantity, Price, Subtotal, Quote)
             </label>
             <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowExport(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted">Annuler</button>
+              <button onClick={() => setShowExport(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
               <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                {exporting ? "Export..." : <><Download className="size-4" /> Exporter</>}
+                {exporting ? "Exporting..." : <><Download className="size-4" /> Export</>}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {loading && <p className="mt-6 text-sm text-muted-foreground">Chargement...</p>}
+      {loading && <p className="mt-6 text-sm text-muted-foreground">Loading...</p>}
       {error && <p className="mt-6 text-sm text-destructive">{error}</p>}
 
       {!loading && !error && (
@@ -516,9 +516,9 @@ export default function DemandesPage() {
               <thead>
                 <tr className={`bg-muted text-left text-muted-foreground ${tableExpanded ? "text-xs" : "text-[11px]"}`}>
                   <th className={tableExpanded ? "w-10 px-4 py-3" : "px-1 py-3"} />
-                  <th className={tableExpanded ? "px-4 py-3 font-medium" : "px-2 py-3 font-medium"}>N°</th>
+                  <th className={tableExpanded ? "px-4 py-3 font-medium" : "px-2 py-3 font-medium"}>No.</th>
                   <ColumnFilterHeader
-                    label="Demandeur"
+                    label="Requester"
                     options={demandeurOptions}
                     selected={filters.demandeur}
                     onChange={(v) => updateFilter("demandeur", v)}
@@ -530,13 +530,13 @@ export default function DemandesPage() {
                     onChange={(v) => updateFilter("capex", v)}
                   />
                   <ColumnFilterHeader
-                    label="Département"
+                    label="Department"
                     options={departementOptions}
                     selected={filters.departement}
                     onChange={(v) => updateFilter("departement", v)}
                   />
                   <ColumnFilterHeader
-                    label="Statut"
+                    label="Status"
                     options={statutOptions}
                     selected={filters.statut}
                     onChange={(v) => updateFilter("statut", v)}
@@ -549,25 +549,25 @@ export default function DemandesPage() {
                     onChange={(v) => updateFilter("rfx", v)}
                   />
                   <ColumnFilterHeader
-                    label="Créée le"
+                    label="Created on"
                     options={createAtOptions}
                     selected={filters.createAt}
                     onChange={(v) => updateFilter("createAt", v)}
                   />
                   <ColumnFilterHeader
-                    label="Achat1"
+                    label="Purchasing 1"
                     options={achat1Options}
                     selected={filters.achat1}
                     onChange={(v) => updateFilter("achat1", v)}
                   />
                   <ColumnFilterHeader
-                    label="Achat2"
+                    label="Purchasing 2"
                     options={achat2Options}
                     selected={filters.achat2}
                     onChange={(v) => updateFilter("achat2", v)}
                   />
                   <ColumnFilterHeader
-                    label="Chef"
+                    label="Manager"
                     options={chefOptions}
                     selected={filters.chef}
                     onChange={(v) => updateFilter("chef", v)}
@@ -581,7 +581,7 @@ export default function DemandesPage() {
                     align="right"
                   />
                   <ColumnFilterHeader
-                    label="Directeur"
+                    label="Director"
                     options={directeurOptions}
                     selected={filters.directeur}
                     onChange={(v) => updateFilter("directeur", v)}
@@ -593,7 +593,7 @@ export default function DemandesPage() {
                 {pageItems.length === 0 ? (
                   <tr>
                     <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">
-                      Aucune demande trouvée.
+                      No requests found.
                     </td>
                   </tr>
                 ) : (
@@ -616,8 +616,8 @@ export default function DemandesPage() {
 
           <div className="flex items-center justify-between border-t border-border px-4 py-3.5 text-xs text-muted-foreground">
             <span>
-              Affichage de {pageItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} à{" "}
-              {(page - 1) * PAGE_SIZE + pageItems.length} sur {filtered.length} demandes
+              Showing {pageItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} to{" "}
+              {(page - 1) * PAGE_SIZE + pageItems.length} of {filtered.length} requests
             </span>
             <div className="flex gap-2">
               <button
@@ -625,14 +625,14 @@ export default function DemandesPage() {
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Précédent
+                Previous
               </button>
               <button
                 className="rounded-lg border border-border px-3 py-2 font-medium text-foreground hover:bg-muted disabled:opacity-50"
                 disabled={page === totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Suivant
+                Next
               </button>
             </div>
           </div>
@@ -640,10 +640,10 @@ export default function DemandesPage() {
       )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <StatCard label="Total demandes" value={stats.total} icon={<FileText className="size-4" />} />
-        <StatCard label="En attente" value={String(stats.enAttente).padStart(2, "0")} icon={<Clock className="size-4" />} />
+        <StatCard label="Total requests" value={stats.total} icon={<FileText className="size-4" />} />
+        <StatCard label="Pending" value={String(stats.enAttente).padStart(2, "0")} icon={<Clock className="size-4" />} />
         <StatCard
-          label={`Ce mois (${now.toLocaleDateString("fr-FR", { month: "short" })})`}
+          label={`This month (${now.toLocaleDateString("en-US", { month: "short" })})`}
           value={stats.ceMois}
           icon={<Calendar className="size-4" />}
         />
@@ -718,7 +718,7 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
   const filteredOptions = options.filter((o) =>
     o.label.toLowerCase().includes(query.toLowerCase())
   );
-  const isActive = selected !== "Tous";
+  const isActive = selected !== "All";
 
   function select(value) {
     onChange(value);
@@ -754,7 +754,7 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
             <input
               autoFocus
               type="text"
-              placeholder="Rechercher..."
+              placeholder="Search..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -763,16 +763,16 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
 
           <div className="max-h-56 overflow-y-auto">
             <div
-              onClick={() => select("Tous")}
+              onClick={() => select("All")}
               className={`cursor-pointer rounded-md px-2 py-1.5 text-sm hover:bg-muted ${
-                selected === "Tous" ? "font-bold" : "font-normal"
+                selected === "All" ? "font-bold" : "font-normal"
               }`}
             >
-              Tous
+              All
             </div>
 
             {filteredOptions.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-muted-foreground">Aucun résultat.</p>
+              <p className="px-2 py-2 text-xs text-muted-foreground">No results.</p>
             ) : (
               filteredOptions.map((o) => (
                 <div
@@ -821,7 +821,7 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
                 else navigate(`/suivi?capex=${encodeURIComponent(demande.capexNom ?? "")}`);
               }}
               className={compact ? "flex max-w-full cursor-pointer items-center gap-1 overflow-hidden text-muted-foreground hover:text-primary hover:underline underline-offset-2" : "flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-primary hover:underline underline-offset-2"}
-              title={`Voir suivi ${demande.capexNom}`}
+              title={`View tracking ${demande.capexNom}`}
             >
               <Calendar className="size-3.5 shrink-0" /> <span className={compact ? "truncate" : ""}>{demande.capexNom}</span>
             </button>
@@ -853,14 +853,14 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
         </td>
         <td className={compact ? "px-2 py-3 overflow-hidden" : "whitespace-nowrap px-4 py-3.5"}>
           <span className={compact ? "flex items-center gap-1 overflow-hidden text-muted-foreground" : "flex items-center gap-1.5 text-muted-foreground"}>
-            <Clock className="size-3.5 shrink-0" /> <span className={compact ? "truncate text-xs" : ""}>{new Date(demande.createAt).toLocaleDateString("fr-FR")}</span>
+            <Clock className="size-3.5 shrink-0" /> <span className={compact ? "truncate text-xs" : ""}>{new Date(demande.createAt).toLocaleDateString("en-US")}</span>
           </span>
         </td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidationAchat1 ? new Date(demande.dateValidationAchat1).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidationAchat2 ? new Date(demande.dateValidationAchat2).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateChef ? new Date(demande.dateValidateChef).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateFinance ? new Date(demande.dateValidateFinance).toLocaleDateString("fr-FR") : "—"}</td>
-        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateDirecteur ? new Date(demande.dateValidateDirecteur).toLocaleDateString("fr-FR") : "—"}</td>
+        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidationAchat1 ? new Date(demande.dateValidationAchat1).toLocaleDateString("en-US") : "—"}</td>
+        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidationAchat2 ? new Date(demande.dateValidationAchat2).toLocaleDateString("en-US") : "—"}</td>
+        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateChef ? new Date(demande.dateValidateChef).toLocaleDateString("en-US") : "—"}</td>
+        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateFinance ? new Date(demande.dateValidateFinance).toLocaleDateString("en-US") : "—"}</td>
+        <td className={compact ? "px-1 py-3 truncate text-center text-xs text-muted-foreground" : "whitespace-nowrap px-4 py-3.5 text-muted-foreground"}>{demande.dateValidateDirecteur ? new Date(demande.dateValidateDirecteur).toLocaleDateString("en-US") : "—"}</td>
       </tr>
 
       {expanded && (
@@ -877,14 +877,14 @@ function DemandeRow({ demande, expanded, onToggle, details, onValider, onRefuser
 function DemandeDetails({ demande, details, onValider, onRefuser }) {
   const enAttente = demande.statut?.startsWith("EnAttenteValidation");
   const datesValidation = [
-    ["Achat 1", demande.dateValidationAchat1],
-    ["Achat 2", demande.dateValidationAchat2],
-    ["Chef", demande.dateValidateChef],
+    ["Purchasing 1", demande.dateValidationAchat1],
+    ["Purchasing 2", demande.dateValidationAchat2],
+    ["Manager", demande.dateValidateChef],
     ["Finance", demande.dateValidateFinance],
-    ["Directeur", demande.dateValidateDirecteur],
+    ["Director", demande.dateValidateDirecteur],
   ].filter(([, date]) => date);
 
-  if (!details) return <p className="text-sm text-muted-foreground">Chargement des articles...</p>;
+  if (!details) return <p className="text-sm text-muted-foreground">Loading items...</p>;
   if (details.error) return <p className="text-sm text-destructive">{details.error}</p>;
 
   const total = details.reduce((sum, d) => sum + d.quantite * (d.prix ?? 0), 0);
@@ -894,19 +894,19 @@ function DemandeDetails({ demande, details, onValider, onRefuser }) {
       {datesValidation.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
           {datesValidation.map(([role, date]) => (
-            <span key={role}>{role} : {new Date(date).toLocaleString("fr-FR")}</span>
+            <span key={role}>{role}: {new Date(date).toLocaleString("en-US")}</span>
           ))}
         </div>
       )}
 
-      {details.length === 0 ? <p className="text-sm text-muted-foreground">Aucun article sur cette demande.</p> : <table className="w-full border-collapse text-sm">
+      {details.length === 0 ? <p className="text-sm text-muted-foreground">No items on this request.</p> : <table className="w-full border-collapse text-sm">
       <thead>
         <tr>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Article</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Quantité</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Prix unitaire</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Sous-total</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Devis</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Item</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Quantity</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Unit price</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Subtotal</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Quote</th>
         </tr>
       </thead>
       <tbody>
@@ -914,8 +914,8 @@ function DemandeDetails({ demande, details, onValider, onRefuser }) {
           <tr key={line.id} className="border-t border-border">
             <td className="px-2 py-1.5">{line.article}</td>
             <td className="px-2 py-1.5">{line.quantite}</td>
-            <td className="px-2 py-1.5">{line.prix != null ? line.prix.toLocaleString("fr-FR") + " $" : "—"}</td>
-            <td className="px-2 py-1.5">{((line.quantite * (line.prix ?? 0)).toLocaleString("fr-FR"))} $</td>
+            <td className="px-2 py-1.5">{line.prix != null ? line.prix.toLocaleString("en-US") + " $" : "—"}</td>
+            <td className="px-2 py-1.5">{((line.quantite * (line.prix ?? 0)).toLocaleString("en-US"))} $</td>
             <td className="px-2 py-1.5">{line.devis || "—"}</td>
           </tr>
         ))}
@@ -923,7 +923,7 @@ function DemandeDetails({ demande, details, onValider, onRefuser }) {
       <tfoot>
         <tr className="border-t border-border">
           <td colSpan={3} className="px-2 py-2"><strong>Total</strong></td>
-          <td colSpan={2} className="px-2 py-2"><strong>{total.toLocaleString("fr-FR")} $</strong></td>
+          <td colSpan={2} className="px-2 py-2"><strong>{total.toLocaleString("en-US")} $</strong></td>
         </tr>
       </tfoot>
       </table>}

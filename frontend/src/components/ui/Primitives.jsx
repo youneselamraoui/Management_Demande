@@ -16,17 +16,20 @@ export function StatCard({ label, value, icon, trend, footnote }) {
       </div>
             <p className="mt-4 text-[32px] font-extrabold tracking-tight">{value}</p>
       {hasTrend ? (
-        <div className="mt-2 flex items-center gap-2">
-          <span
-            className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
-              up ? "bg-success-soft text-success" : "bg-danger-soft text-destructive"
-            }`}
-          >
-            {up ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-            {Math.abs(trend).toFixed(1)}%
-          </span>
-          <span className="text-[11px] text-muted-foreground">vs mois dernier</span>
-        </div>
+        <>
+          <div className="mt-2 flex items-center gap-2">
+            <span
+              className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                up ? "bg-success-soft text-success" : "bg-danger-soft text-destructive"
+              }`}
+            >
+              {up ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+              {Math.abs(trend).toFixed(1)}%
+            </span>
+            <span className="text-[11px] text-muted-foreground">vs last month</span>
+          </div>
+          {footnote ? <p className="mt-1.5 text-[11px] leading-tight text-muted-foreground">{footnote}</p> : null}
+        </>
       ) : footnote ? (
         <p className="mt-2 text-[11px] text-muted-foreground">{footnote}</p>
       ) : null}
@@ -57,26 +60,26 @@ const STATUT_STYLES = {
   RefuseeDirecteur: "bg-danger-soft text-destructive",
 };
 const STATUT_LABELS = {
-  EnAttente: "En attente",
-  ValidationAchat1: "En attente validation achat1",
-  ValidationAchat2: "En attente validation achat2",
-  ValidationChef: "En attente validation chef",
-  ValidationFinance: "En attente validation finance",
-  ValidationDirecteur: "En attente validation directeur",
-  EnAttenteValidationAchat1: "En attente validation achat1",
-  EnAttenteValidationAchat2: "En attente validation achat2",
-  EnAttenteValidationChef: "En attente validation chef",
-  EnAttenteValidationFinance: "En attente validation finance",
-  EnAttenteConfirmationFinance: "En attente confirmation finance",
-  EnAttenteValidationDirecteur: "En attente validation directeur",
-  BonDeCommande: "Bon de commande",
-  Acceptee: "Bon de commande",
-  Rejetee: "Rejetée",
-  RefuseeAchat1: "Refusé achat1",
-  RefuseeAchat2: "Refusé achat2",
-  RefuseeChef: "Refusé chef",
-  RefuseeFinance: "Refusé finance",
-  RefuseeDirecteur: "Refusé directeur",
+  EnAttente: "Pending",
+  ValidationAchat1: "Pending purchase validation 1",
+  ValidationAchat2: "Pending purchase validation 2",
+  ValidationChef: "Pending manager validation",
+  ValidationFinance: "Pending finance validation",
+  ValidationDirecteur: "Pending director validation",
+  EnAttenteValidationAchat1: "Pending purchase validation 1",
+  EnAttenteValidationAchat2: "Pending purchase validation 2",
+  EnAttenteValidationChef: "Pending manager validation",
+  EnAttenteValidationFinance: "Pending finance validation",
+  EnAttenteConfirmationFinance: "Pending finance confirmation",
+  EnAttenteValidationDirecteur: "Pending director validation",
+  BonDeCommande: "Purchase Order",
+  Acceptee: "Purchase Order",
+  Rejetee: "Rejected",
+  RefuseeAchat1: "Rejected purchase 1",
+  RefuseeAchat2: "Rejected purchase 2",
+  RefuseeChef: "Rejected by manager",
+  RefuseeFinance: "Rejected by finance",
+  RefuseeDirecteur: "Rejected by director",
 };
 
 export function StatutBadge({ statut }) {

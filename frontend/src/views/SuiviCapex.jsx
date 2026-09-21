@@ -96,7 +96,7 @@ export default function SuiviCapex() {
     return <p className="text-destructive">{error}</p>;
   }
   if (loading || !data) {
-    return <p className="text-muted-foreground">Chargement...</p>;
+    return <p className="text-muted-foreground">Loading...</p>;
   }
 
   // total engagé = Bon de commande + en attente (les en attente sont désormais inclus dans parDepartement)
@@ -104,8 +104,11 @@ export default function SuiviCapex() {
   const consomme = totalEngage;
   const resteBudgetReel = data.budgetTotal - totalEngage;
   const pctConsomme = data.budgetTotal > 0 ? (consomme / data.budgetTotal) * 100 : 0;
-  const montantValide = Math.max(0, totalEngage - (data.montantEnAttente ?? 0));
+  const montantEnAttente = data.montantEnAttente ?? data.MontantEnAttente ?? 0;
+  const montantValide = Math.max(0, totalEngage - montantEnAttente);
   const previsionnel = totalEngage; // engagé = déjà consommé + en attente, plus de double comptage
+  const pctValide = data.budgetTotal > 0 ? (montantValide / data.budgetTotal) * 100 : 0;
+  const pctEnAttente = data.budgetTotal > 0 ? (montantEnAttente / data.budgetTotal) * 100 : 0;
 
   const highlighted = data ? data.parDepartement.slice(0, 2) : [];
 
@@ -126,9 +129,9 @@ export default function SuiviCapex() {
     <>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Suivi Capex</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Capex Tracking</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Analyse détaillée de la consommation budgétaire par département.
+            Detailed analysis of budget consumption by department.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -147,33 +150,33 @@ export default function SuiviCapex() {
           <button
             className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted"
             onClick={() => {
-              const name = `${data.nomCapex || "Capex"}_Repartition_${pctConsomme.toFixed(0)}pct`;
+              const name = `${data.nomCapex || "Capex"}_Breakdown_${pctConsomme.toFixed(0)}pct`;
               const legend = slices.map((s) => ({
                 label: s.departementNom,
                 color: s.color,
                 pct: `${((s.pct * 100).toFixed(0))}%`,
               }));
-              if (resteBudgetReel > 0) legend.push({ label: "Reste budget", color: "#e2e8f0", pct: `${(100 - pctConsomme).toFixed(0)}%`, dashed: true });
-              exportSvgAsPng(svgRef.current, name, 2, legend).catch((e) => alert("Export échoué: " + e.message));
+              if (resteBudgetReel > 0) legend.push({ label: "Remaining budget", color: "#e2e8f0", pct: `${(100 - pctConsomme).toFixed(0)}%`, dashed: true });
+              exportSvgAsPng(svgRef.current, name, 2, legend).catch((e) => alert("Export failed: " + e.message));
             }}
-            title="Exporter le graphe en PNG avec légende"
+            title="Export chart as PNG with legend"
           >
-            <Download className="size-4" /> Exporter PNG
+            <Download className="size-4" /> Export PNG
           </button>
         </div>
       </header>
 
       <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
         <div className="flex items-center gap-2">
-          <DatePicker value={from} onChange={setFrom} placeholder="jj/mm/aaaa" />
+          <DatePicker value={from} onChange={setFrom} placeholder="mm/dd/yyyy" />
           <span className="px-1 text-sm font-semibold text-muted-foreground">→</span>
-          <DatePicker value={to} onChange={setTo} placeholder="jj/mm/aaaa" />
+          <DatePicker value={to} onChange={setTo} placeholder="mm/dd/yyyy" />
           {(from || to) && (
             <button
               onClick={() => { setFrom(""); setTo(""); }}
               className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              Effacer
+              Clear
             </button>
           )}
         </div>
@@ -181,7 +184,7 @@ export default function SuiviCapex() {
           <Search className="size-4 shrink-0 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher département..."
+            placeholder="Search department..."
             value={deptSearch}
             onChange={(e) => setDeptSearch(e.target.value)}
             className="w-40 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 sm:w-52"
@@ -193,9 +196,9 @@ export default function SuiviCapex() {
         <div className="mt-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
           <div>
-            <p className="font-semibold">Incohérence ResteBudget détectée</p>
+            <p className="font-semibold">Remaining Budget Inconsistency Detected</p>
             <p className="mt-1 text-amber-800">
-              Valeur stockée en base: {(data.budgetRestantStocke ?? data.BudgetRestantStocke)?.toLocaleString("fr-FR")} $ — Valeur calculée: {(data.budgetRestantCalcule ?? data.BudgetRestantCalcule)?.toLocaleString("fr-FR")} $ (BudgetTotal - consommé). Écart: {((data.budgetRestantStocke ?? data.BudgetRestantStocke) - (data.budgetRestantCalcule ?? data.BudgetRestantCalcule))?.toLocaleString("fr-FR")} $. Modif directe SSMS détectée.
+              Stored value in DB: {(data.budgetRestantStocke ?? data.BudgetRestantStocke)?.toLocaleString("en-US")} $ — Calculated value: {(data.budgetRestantCalcule ?? data.BudgetRestantCalcule)?.toLocaleString("en-US")} $ (Total Budget - consumed). Gap: {((data.budgetRestantStocke ?? data.BudgetRestantStocke) - (data.budgetRestantCalcule ?? data.BudgetRestantCalcule))?.toLocaleString("en-US")} $. Direct SSMS modification detected.
             </p>
           </div>
         </div>
@@ -204,8 +207,8 @@ export default function SuiviCapex() {
         <div className="mt-6 flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
           <Info className="mt-0.5 size-5 shrink-0 text-blue-600" />
           <div>
-            <p className="font-semibold">Filtre actif — calcul filtré</p>
-            <p className="mt-1 text-blue-800">Reste affiché {(data.budgetRestantCalcule ?? data.BudgetRestantCalcule)?.toLocaleString("fr-FR")} $ correspond à l’intervalle {from || "…"} → {to || "…"} (BudgetTotal - consommé filtré). Valeur stockée globale {(data.budgetRestantStocke ?? data.BudgetRestantStocke)?.toLocaleString("fr-FR")} $ ignorée pendant le filtre.</p>
+            <p className="font-semibold">Active filter — filtered calculation</p>
+            <p className="mt-1 text-blue-800">Displayed remaining {(data.budgetRestantCalcule ?? data.BudgetRestantCalcule)?.toLocaleString("en-US")} $ corresponds to interval {from || "…"} → {to || "…"} (Total Budget - filtered consumption). Global stored value {(data.budgetRestantStocke ?? data.BudgetRestantStocke)?.toLocaleString("en-US")} $ ignored during filter.</p>
           </div>
         </div>
       )}
@@ -214,14 +217,14 @@ export default function SuiviCapex() {
         className="mt-6 grid gap-4"
         style={{ gridTemplateColumns: `repeat(${1 + highlighted.length}, minmax(0, 1fr))` }}
       >
-        <StatCard label="Budget Total" value={`${data.budgetTotal.toLocaleString("fr-FR")} $`} icon={<CreditCard className="size-4" />} />
+        <StatCard label="Total Budget" value={`${data.budgetTotal.toLocaleString("en-US")} $`} icon={<CreditCard className="size-4" />} />
         {highlighted.map((d, i) => {
           const { icon: Icon } = getDeptConfig(d.departementNom, i);
           return (
             <StatCard
               key={d.departementNom}
-              label={`Consommation ${d.departementNom}`}
-              value={`${d.montantConsomme.toLocaleString("fr-FR")} $`}
+              label={`Consumption ${d.departementNom}`}
+              value={`${d.montantConsomme.toLocaleString("en-US")} $`}
               icon={<Icon className="size-4" />}
             />
           );
@@ -232,13 +235,13 @@ export default function SuiviCapex() {
         <div className="rounded-2xl border border-border p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-bold">Répartition de l'engagement</h2>
+              <h2 className="font-bold">Commitment Breakdown</h2>
               <p className="text-xs text-muted-foreground">
-                {data.nomCapex} — Budget total : {data.budgetTotal.toLocaleString("fr-FR")} $ (engagé : Bon de commande + en attente)
+                {data.nomCapex} — Total budget: {data.budgetTotal.toLocaleString("en-US")} $ (committed: Purchase Order + Pending)
               </p>
             </div>
             <span className="rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
-              {pctConsomme.toFixed(0)}% Engagé
+              {pctConsomme.toFixed(0)}% Committed
             </span>
           </div>
 
@@ -258,10 +261,10 @@ export default function SuiviCapex() {
                 />
               ))}
               <text x="110" y="105" textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--color-foreground)">
-                {consomme.toLocaleString("fr-FR")}
+                {consomme.toLocaleString("en-US")}
               </text>
               <text x="110" y="126" textAnchor="middle" fontSize="12" fill="var(--color-muted-foreground)">
-                $ Utilisé
+                $ Used
               </text>
             </svg>
           </div>
@@ -275,7 +278,7 @@ export default function SuiviCapex() {
             {resteBudgetReel > 0 && (
               <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <span className="size-2.5 shrink-0 rounded-full bg-muted" style={{ border: "1px solid var(--color-border)" }} />
-                Reste
+                Remaining
               </span>
             )}
           </div>
@@ -283,9 +286,25 @@ export default function SuiviCapex() {
           <div className="flex gap-3 rounded-xl bg-accent p-4 text-sm text-accent-foreground">
             <Info className="mt-0.5 size-4 shrink-0" />
             <div>
-              <strong className="block text-foreground">Aperçu budgétaire</strong>
-              L'engagement total est de {pctConsomme.toFixed(0)}% sur ce Capex (dont {montantValide.toLocaleString("fr-FR")} $ validés et {(data.montantEnAttente ?? 0).toLocaleString("fr-FR")} $ en attente). Le reste à engager
-              s'élève à {resteBudgetReel.toLocaleString("fr-FR")} $.
+              <strong className="block text-foreground">Budget Overview — Committed / Consumption</strong>
+              Total consumption (committed): {consomme.toLocaleString("en-US")} $ — {pctConsomme.toFixed(1)}% of budget. Including <span className="font-semibold text-success">{montantValide.toLocaleString("en-US")} $ approved (Purchase Order)</span> and <span className="font-semibold text-warning">{montantEnAttente.toLocaleString("en-US")} $ pending</span> (budget reservation). Remaining to commit: {resteBudgetReel.toLocaleString("en-US")} $.
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-lg bg-success-soft p-2.5">
+              <p className="text-[11px] font-semibold text-success">Approved</p>
+              <p className="text-sm font-extrabold text-success">{montantValide.toLocaleString("en-US")} $</p>
+              <p className="text-[11px] text-muted-foreground">{pctValide.toFixed(1)}% budget</p>
+            </div>
+            <div className="rounded-lg bg-warning-soft p-2.5">
+              <p className="text-[11px] font-semibold text-warning">Pending</p>
+              <p className="text-sm font-extrabold text-warning">{montantEnAttente.toLocaleString("en-US")} $</p>
+              <p className="text-[11px] text-muted-foreground">{pctEnAttente.toFixed(1)}% budget</p>
+            </div>
+            <div className="rounded-lg bg-muted p-2.5">
+              <p className="text-[11px] font-semibold text-muted-foreground">Total Committed</p>
+              <p className="text-sm font-extrabold">{consomme.toLocaleString("en-US")} $</p>
+              <p className="text-[11px] text-muted-foreground">{pctConsomme.toFixed(1)}% budget</p>
             </div>
           </div>
         </div>
@@ -293,8 +312,8 @@ export default function SuiviCapex() {
         <div className="rounded-2xl border border-border p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-bold">Détail par département</h2>
-              <p className="text-xs text-muted-foreground">Ventilation des dépenses engagées</p>
+              <h2 className="font-bold">Details by Department</h2>
+              <p className="text-xs text-muted-foreground">Breakdown of committed expenses</p>
             </div>
             <Filter className="size-4 text-muted-foreground" />
           </div>
@@ -313,10 +332,10 @@ export default function SuiviCapex() {
                       {d.departementNom}
                       <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
                     </div>
-                    <div className="text-xs text-muted-foreground">{pct.toFixed(0)}% du budget</div>
+                    <div className="text-xs text-muted-foreground">{pct.toFixed(0)}% of budget</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-semibold">{d.montantConsomme.toLocaleString("fr-FR")} $</div>
+                    <div className="font-semibold">{d.montantConsomme.toLocaleString("en-US")} $</div>
                     <span className="mt-0.5 inline-block rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       {pct.toFixed(0)}%
                     </span>
@@ -330,11 +349,11 @@ export default function SuiviCapex() {
                 <Wallet className="size-4" />
               </div>
               <div className="flex-1">
-                <div className="text-sm font-semibold">Reste budget</div>
-                <div className="text-xs text-muted-foreground">Fonds disponibles</div>
+                <div className="text-sm font-semibold">Remaining budget</div>
+                <div className="text-xs text-muted-foreground">Available funds</div>
               </div>
               <div className="text-right">
-                <div className="font-semibold">{resteBudgetReel.toLocaleString("fr-FR")} $</div>
+                <div className="font-semibold">{resteBudgetReel.toLocaleString("en-US")} $</div>
                 <span className="mt-0.5 inline-block rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                   {(100 - pctConsomme).toFixed(0)}%
                 </span>
@@ -342,30 +361,33 @@ export default function SuiviCapex() {
             </div>
           </div>
 
-          {data.montantEnAttente > 0 && (
-            <div className="mt-3 rounded-xl bg-muted p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <TrendingUp className="size-4" /> Détail de l'engagement
-              </div>
-              <div className="mt-2.5 space-y-1 text-sm">
-                <div className="flex justify-between"><span>Validé (Bon de commande)</span><span>{montantValide.toLocaleString("fr-FR")} $</span></div>
-                <div className="flex justify-between"><span>En attente</span><span>{(data.montantEnAttente ?? 0).toLocaleString("fr-FR")} $</span></div>
-                <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1"><span>Total engagé</span><span>{previsionnel.toLocaleString("fr-FR")} $</span></div>
-              </div>
-              <div className="mt-2">
-                <ProgressBar percent={data.budgetTotal > 0 ? (previsionnel / data.budgetTotal) * 100 : 0} color="var(--color-primary)" />
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                L'engagé inclut désormais les demandes en attente (réservation budgétaire).
-              </div>
+          <div className="mt-3 rounded-xl bg-muted p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <TrendingUp className="size-4" /> Commitment Details — Approved vs Pending
             </div>
-          )}
+            <div className="mt-2.5 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />Approved (Purchase Order)</span><span className="font-semibold text-success">{montantValide.toLocaleString("en-US")} $</span></div>
+              <div className="flex justify-between"><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning" />Pending (Reserved)</span><span className="font-semibold text-warning">{montantEnAttente.toLocaleString("en-US")} $</span></div>
+              <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1"><span>Total Committed (Consumption)</span><span>{previsionnel.toLocaleString("en-US")} $</span></div>
+            </div>
+            <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-background">
+              <div className="h-full bg-success" style={{ width: `${data.budgetTotal > 0 ? (montantValide / data.budgetTotal) * 100 : 0}%` }} />
+              <div className="h-full bg-warning" style={{ width: `${data.budgetTotal > 0 ? (montantEnAttente / data.budgetTotal) * 100 : 0}%` }} />
+            </div>
+            <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-success" /> Approved {data.budgetTotal > 0 ? ((montantValide / data.budgetTotal) * 100).toFixed(1) : 0}%</span>
+              <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-warning" /> Pending {data.budgetTotal > 0 ? ((montantEnAttente / data.budgetTotal) * 100).toFixed(1) : 0}%</span>
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              Consumption = Approved + Pending. Committed includes pending requests (budget reservation).
+            </div>
+          </div>
 
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             onClick={() => navigate(`/demandes?capex=${encodeURIComponent(data.nomCapex)}`)}
           >
-            Voir toutes les demandes →
+            View all requests →
           </button>
         </div>
       </section>

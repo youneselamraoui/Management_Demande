@@ -48,7 +48,7 @@ function ConsommationCapex() {
   const pieSeries = parDepartement.map((d) => d.montantConsomme);
 
   const donutData = {
-    labels: pieLabels.length > 0 ? pieLabels : ["Aucune consommation"],
+    labels: pieLabels.length > 0 ? pieLabels : ["No consumption"],
     series: pieSeries.length > 0 ? pieSeries : [1],
   };
 
@@ -73,9 +73,13 @@ function ConsommationCapex() {
   };
 
   const budgetTotal = consommation?.budgetTotal ?? 0;
-  const resteBudget = consommation?.resteBudget ?? 0;
+  const resteBudget = consommation?.resteBudget ?? consommation?.budgetRestant ?? 0;
+  const montantEnAttente = consommation?.montantEnAttente ?? consommation?.MontantEnAttente ?? 0;
   const consomme = budgetTotal - resteBudget;
+  const montantValide = Math.max(0, consomme - montantEnAttente);
   const pctConsomme = budgetTotal > 0 ? (consomme / budgetTotal) * 100 : 0;
+  const pctValide = budgetTotal > 0 ? (montantValide / budgetTotal) * 100 : 0;
+  const pctEnAttente = budgetTotal > 0 ? (montantEnAttente / budgetTotal) * 100 : 0;
 
   return (
     <div className="content">
@@ -98,7 +102,7 @@ function ConsommationCapex() {
           </Col>
         </Row>
 
-        {loading && <p>Chargement...</p>}
+        {loading && <p>Loading...</p>}
 
         {!loading && consommation && (
           <Row>
@@ -106,7 +110,7 @@ function ConsommationCapex() {
               <Card className="shadow-sm h-100">
                 <Card.Body className="text-center">
                   <Card.Title as="h4" className="mb-1">
-                    Consommation du Capex
+                    Capex Consumption
                   </Card.Title>
                   <Card.Subtitle className="text-muted mb-3">
                     {consommation.nomCapex}
@@ -147,16 +151,24 @@ function ConsommationCapex() {
 
                   <div className="text-start">
                     <div className="d-flex justify-content-between small mb-1">
-                      <span>Engagé : {consomme.toLocaleString("fr-FR")} $</span>
+                      <span>Committed (Consumption): ${consomme.toLocaleString("en-US")}</span>
                       <span>{pctConsomme.toFixed(1)}%</span>
                     </div>
                     <ProgressBar
                       now={pctConsomme}
                       variant={pctConsomme > 90 ? "danger" : pctConsomme > 70 ? "warning" : "success"}
                     />
+                    <div className="d-flex gap-2 mt-2" style={{ height: 8, borderRadius: 4, overflow: "hidden", background: "#e9ecef" }}>
+                      <div style={{ width: `${pctValide}%`, background: "#198754" }} title={`Approved ${pctValide.toFixed(1)}%`} />
+                      <div style={{ width: `${pctEnAttente}%`, background: "#ffc107" }} title={`Pending ${pctEnAttente.toFixed(1)}%`} />
+                    </div>
+                    <div className="d-flex justify-content-between small mt-2">
+                      <span className="text-success"><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#198754", marginRight: 4 }} />Approved: ${montantValide.toLocaleString("en-US")}</span>
+                      <span className="text-warning"><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#ffc107", marginRight: 4 }} />Pending: ${montantEnAttente.toLocaleString("en-US")}</span>
+                    </div>
                     <div className="text-muted small mt-2">
                       <i className="fa fa-history me-1" />
-                      Budget total : {budgetTotal.toLocaleString("fr-FR")} $
+                      Total budget: ${budgetTotal.toLocaleString("en-US")} • Remaining: ${resteBudget.toLocaleString("en-US")}
                     </div>
                   </div>
                 </Card.Body>
@@ -167,25 +179,25 @@ function ConsommationCapex() {
               <Card className="shadow-sm h-100">
                 <Card.Body>
                   <Card.Title as="h4" className="mb-1">
-                    Détail par département
+                    Breakdown by Department
                   </Card.Title>
                   <Card.Subtitle className="text-muted mb-3">
-                    Montants engagés (Bon de commande + en attente)
+                    Committed amounts (Purchase order + pending)
                   </Card.Subtitle>
 
                   <Table hover responsive size="sm">
                     <thead>
                       <tr>
-                        <th>Département</th>
-                        <th className="text-end">Montant consommé</th>
-                        <th className="text-end">% du budget</th>
+                        <th>Department</th>
+                        <th className="text-end">Amount Consumed</th>
+                        <th className="text-end">% of Budget</th>
                       </tr>
                     </thead>
                     <tbody>
                       {parDepartement.length === 0 ? (
                         <tr>
                           <td colSpan={3} className="text-center text-muted">
-                            Aucune demande engagée sur ce Capex pour l'instant.
+                            No committed requests on this Capex yet.
                           </td>
                         </tr>
                       ) : (
@@ -205,7 +217,7 @@ function ConsommationCapex() {
                               {d.departementNom}
                             </td>
                             <td className="text-end">
-                              {d.montantConsomme.toLocaleString("fr-FR")} $
+                              ${d.montantConsomme.toLocaleString("en-US")}
                             </td>
                             <td className="text-end">
                               {budgetTotal > 0
@@ -220,10 +232,10 @@ function ConsommationCapex() {
                     <tfoot>
                       <tr>
                         <td>
-                          <strong>Reste budget</strong>
+                          <strong>Remaining Budget</strong>
                         </td>
                         <td colSpan={2} className="text-end">
-                          <strong>{resteBudget.toLocaleString("fr-FR")} $</strong>
+                          <strong>${resteBudget.toLocaleString("en-US")}</strong>
                         </td>
                       </tr>
                     </tfoot>

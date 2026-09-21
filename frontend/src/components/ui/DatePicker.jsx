@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
 
-const MONTHS_FR = [
-  "janvier","février","mars","avril","mai","juin",
-  "juillet","août","septembre","octobre","novembre","décembre"
+const MONTHS_EN = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
 ];
-const WEEKDAYS = ["lu","ma","me","je","ve","sa","di"];
+const WEEKDAYS = ["Mo","Tu","We","Th","Fr","Sa","Su"];
 
 function isoToFr(iso) {
   if (!iso) return "";
   const [y,m,d] = iso.split("-");
-  return `${d}/${m}/${y}`;
+  return `${m}/${d}/${y}`;
 }
-function frToIso(fr) {
-  const p = fr.trim().split("/");
+function frToIso(val) {
+  const p = val.trim().split("/");
   if (p.length !== 3) return null;
-  let [d,m,y] = p;
+  let [m,d,y] = p;
   if (y.length === 2) y = "20"+y;
   if (y.length !== 4) return null;
   const iso = `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
@@ -43,7 +43,7 @@ function getMonthMatrix(year, month) {
   return cells;
 }
 
-export default function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa" }) {
+export default function DatePicker({ value, onChange, placeholder = "mm/dd/yyyy" }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(() => isoToFr(value));
   const [viewYear, setViewYear] = useState(() => {
@@ -157,7 +157,7 @@ export default function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa"
             type="button"
             onClick={() => { onChange(""); setText(""); inputRef.current?.focus(); }}
             className="grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="Effacer"
+            title="Clear"
           >
             <X className="size-3.5" />
           </button>
@@ -171,7 +171,7 @@ export default function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa"
         </button>
       </div>
 
-      {/* Popup calendrier */}
+      {/* Calendar popup */}
       {open && (
         <div className="absolute left-0 top-[calc(100%+8px)] z-30 w-[300px] rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] animate-in fade-in">
           {/* Header */}
@@ -183,7 +183,7 @@ export default function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa"
                 // quick month picker – cycle for now
               }}
             >
-              {MONTHS_FR[viewMonth]} {viewYear}
+              {MONTHS_EN[viewMonth]} {viewYear}
               <ChevronRight className="size-3 rotate-90 text-muted-foreground" />
             </button>
             <div className="flex items-center gap-1">
@@ -256,7 +256,7 @@ export default function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa"
               onClick={() => { onChange(""); setText(""); setOpen(false); }}
               className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              Effacer
+              Clear
             </button>
             <button
               type="button"
@@ -269,7 +269,7 @@ export default function DatePicker({ value, onChange, placeholder = "jj/mm/aaaa"
               }}
               className="rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
-              Aujourd'hui
+              Today
             </button>
           </div>
         </div>

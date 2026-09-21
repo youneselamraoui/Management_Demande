@@ -41,6 +41,7 @@ builder.Services.AddScoped<ICapexService, CapexService>();
 builder.Services.AddScoped<IDemandeService, DemandeService>();
 builder.Services.AddScoped<IDetailDemandeService, DetailDemandeService>();
 builder.Services.AddScoped<IBonCommandeService, BonCommandeService>();
+builder.Services.AddScoped<IFournisseurService, FournisseurService>();
 
 var app = builder.Build();
 

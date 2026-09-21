@@ -7,25 +7,25 @@ import { exportToExcel, formatDateExcel } from "../utils/exportExcel";
 
 const PAGE_SIZE = 10;
 
-const DEFAULT_FILTERS = { po: "Tous", dateCreation: "Tous", fournisseur: "Tous" };
+const DEFAULT_FILTERS = { po: "All", dateCreation: "All", fournisseur: "All" };
 
-function formatDate(v) { return v ? new Date(v).toLocaleDateString("fr-FR") : "—"; }
+function formatDate(v) { return v ? new Date(v).toLocaleDateString("en-US") : "—"; }
 function getBonCommandeId(b) { return b.id ?? b.Id; }
 function getCheminFinance(b) { return b.cheminFinance ?? b.CheminFinance ?? ""; }
 function textOptions(list, getValue) {
   const set = new Set();
   list.forEach((item) => { const v = getValue(item); if (v) set.add(v); });
-  return [...set].sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" })).map((v) => ({ value: v, label: v }));
+  return [...set].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" })).map((v) => ({ value: v, label: v }));
 }
 function dateOptions(list, getRaw) {
   const map = new Map(); let hasEmpty = false;
   list.forEach((item) => {
     const raw = getRaw(item); if (!raw) { hasEmpty = true; return; }
-    const d = new Date(raw); const label = d.toLocaleDateString("fr-FR");
+    const d = new Date(raw); const label = d.toLocaleDateString("en-US");
     if (!map.has(label) || d.getTime() < map.get(label)) map.set(label, d.getTime());
   });
   const options = [...map.entries()].sort((a, b) => a[1] - b[1]).map(([label]) => ({ value: label, label }));
-  if (hasEmpty) options.push({ value: "—", label: "— (non renseigné)" });
+  if (hasEmpty) options.push({ value: "—", label: "— (not specified)" });
   return options;
 }
 
@@ -38,7 +38,7 @@ export default function BonCommandesPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [detailsCache, setDetailsCache] = useState({});
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  // filtre intervalle dates – même UX que SuiviCapex
+  // date range filter – same UX as Capex Tracking
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showExport, setShowExport] = useState(false);
@@ -88,7 +88,7 @@ export default function BonCommandesPage() {
   const poOptions = textOptions(data, (b) => b.po ?? b.Po);
   const fournisseurOptions = textOptions(data, (b) => b.fournisseurNom ?? b.FournisseurNom);
   const dateCreationOptions = dateOptions(data, (b) => b.dateCreation ?? b.DateCreation);
-  const activeFiltersCount = Object.values(filters).filter((v) => v !== "Tous").length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+  const activeFiltersCount = Object.values(filters).filter((v) => v !== "All").length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   const filtered = data.filter((b) => {
     const q = search.toLowerCase();
@@ -98,10 +98,10 @@ export default function BonCommandesPage() {
         (b.fournisseurNom ?? b.FournisseurNom ?? "").toLowerCase().includes(q);
       if (!ok) return false;
     }
-    if (filters.po !== "Tous" && (b.po ?? b.Po) !== filters.po) return false;
-    if (filters.fournisseur !== "Tous" && (b.fournisseurNom ?? b.FournisseurNom) !== filters.fournisseur) return false;
-    if (filters.dateCreation !== "Tous" && formatDate(b.dateCreation ?? b.DateCreation) !== filters.dateCreation) return false;
-    // intervalle dates sur DateCreation – même logique que SuiviCapex
+    if (filters.po !== "All" && (b.po ?? b.Po) !== filters.po) return false;
+    if (filters.fournisseur !== "All" && (b.fournisseurNom ?? b.FournisseurNom) !== filters.fournisseur) return false;
+    if (filters.dateCreation !== "All" && formatDate(b.dateCreation ?? b.DateCreation) !== filters.dateCreation) return false;
+    // date interval on DateCreation – same logic as Capex Tracking
     if (dateFrom || dateTo) {
       const raw = b.dateCreation ?? b.DateCreation;
       const t = raw ? new Date(raw) : null;
@@ -133,13 +133,13 @@ export default function BonCommandesPage() {
         CheminFinance: getCheminFinance(b),
       }));
       const columns = [
-        { header: "DemandeId", key: "DemandeId" },
+        { header: "Request ID", key: "DemandeId" },
         { header: "PO", key: "PO" },
-        { header: "DateCreation", key: "DateCreation" },
-        { header: "Fournisseur", key: "Fournisseur" },
-        { header: "CheminFinance", key: "CheminFinance" },
+        { header: "Creation Date", key: "DateCreation" },
+        { header: "Supplier", key: "Fournisseur" },
+        { header: "Finance Path", key: "CheminFinance" },
       ];
-      const sheets = [{ name: "Bons de commande", rows, columns }];
+      const sheets = [{ name: "Purchase Orders", rows, columns }];
       if (includeDetails) {
         const allDetails = [];
         for (const b of filtered) {
@@ -159,29 +159,29 @@ export default function BonCommandesPage() {
               Devis: line.devis || "",
             }));
           } else if (Array.isArray(d) && !d.length) {
-            allDetails.push({ DemandeId: demandeId, PO: b.po ?? b.Po ?? "", Article: "Aucun article", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" });
+            allDetails.push({ DemandeId: demandeId, PO: b.po ?? b.Po ?? "", Article: "No items", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" });
           }
         }
-        // Toujours créer la feuille Details quand l'option est cochée, même si vide
+        // Always create Details sheet when option is checked, even if empty
         sheets.push({
           name: "Details",
-          rows: allDetails.length ? allDetails : [{ DemandeId: "", PO: "", Article: "Aucun article trouvé", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" }],
+          rows: allDetails.length ? allDetails : [{ DemandeId: "", PO: "", Article: "No items found", Quantite: "", PrixUnitaire: "", SousTotal: "", Devis: "" }],
           columns: [
-            { header: "DemandeId", key: "DemandeId" },
+            { header: "Request ID", key: "DemandeId" },
             { header: "PO", key: "PO" },
-            { header: "Article", key: "Article" },
-            { header: "Quantité", key: "Quantite" },
-            { header: "Prix unitaire", key: "PrixUnitaire" },
-            { header: "Sous-total", key: "SousTotal" },
-            { header: "Devis", key: "Devis" },
+            { header: "Item", key: "Article" },
+            { header: "Quantity", key: "Quantite" },
+            { header: "Unit Price", key: "PrixUnitaire" },
+            { header: "Subtotal", key: "SousTotal" },
+            { header: "Quote", key: "Devis" },
           ],
         });
       }
-      exportToExcel({ filename: `Bons_de_commande_${new Date().toISOString().slice(0,10)}`, sheets });
+      exportToExcel({ filename: `Purchase_Orders_${new Date().toISOString().slice(0,10)}`, sheets });
       setShowExport(false);
     } catch (e) {
       console.error("Export error", e);
-      alert("Erreur export: " + e.message);
+      alert("Export error: " + e.message);
     } finally { setExporting(false); }
   }
 
@@ -190,8 +190,8 @@ export default function BonCommandesPage() {
       <div className="rounded-2xl border border-border p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Bons de commande</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Liste des bons de commande générés à partir des demandes validées.</p>
+            <h1 className="text-2xl font-extrabold tracking-tight">Purchase Orders</h1>
+            <p className="mt-1 text-sm text-muted-foreground">List of purchase orders generated from approved requests.</p>
           </div>
         </div>
         <div className="mt-5 flex items-center gap-3">
@@ -199,7 +199,7 @@ export default function BonCommandesPage() {
             <Search className="size-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher par Demande, PO ou fournisseur..."
+              placeholder="Search by Request, PO or supplier..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -207,58 +207,58 @@ export default function BonCommandesPage() {
           </div>
           {activeFiltersCount > 0 && (
             <button onClick={() => { setFilters(DEFAULT_FILTERS); setDateFrom(""); setDateTo(""); setPage(1); }} className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm font-medium hover:bg-muted/70">
-              <X className="size-3.5" /> Réinitialiser ({activeFiltersCount})
+              <X className="size-3.5" /> Reset ({activeFiltersCount})
             </button>
           )}
           <button onClick={() => setShowExport(true)} disabled={!filtered.length} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50">
-            <Download className="size-4" /> Exporter
+            <Download className="size-4" /> Export
           </button>
         </div>
 
-        {/* Filtre date intervalle – même design que SuiviCapex */}
+        {/* Date interval filter – same design as Capex Tracking */}
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Calendar className="size-4" />
-            <span className="hidden sm:inline">Période (Date création)</span>
-            <span className="sm:hidden">Période</span>
+            <span className="hidden sm:inline">Period (Creation Date)</span>
+            <span className="sm:hidden">Period</span>
           </div>
           <div className="flex items-center gap-2">
-            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} placeholder="mm/dd/yyyy" />
             <span className="px-1 text-sm font-semibold text-muted-foreground">→</span>
-            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPage(1); }} placeholder="jj/mm/aaaa" />
+            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPage(1); }} placeholder="mm/dd/yyyy" />
             {(dateFrom || dateTo) && (
               <button
                 onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
                 className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                Effacer
+                Clear
               </button>
             )}
           </div>
           {(dateFrom || dateTo) && (
             <span className="ml-auto text-xs text-muted-foreground">
-              {filtered.length} résultat{filtered.length !== 1 ? "s" : ""} sur {data.length}
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""} of {data.length}
             </span>
           )}
         </div>
       </div>
 
-      {loading && <p className="mt-6 text-sm text-muted-foreground">Chargement...</p>}
+      {loading && <p className="mt-6 text-sm text-muted-foreground">Loading...</p>}
       {error && <p className="mt-6 text-sm text-destructive">{error}</p>}
 
       {showExport && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4" onClick={() => setShowExport(false)}>
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold">Exporter en Excel</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Exporte {filtered.length} ligne(s) filtrée(s) — compatible Excel.</p>
+            <h3 className="font-bold">Export to Excel</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Export {filtered.length} filtered row(s) — Excel compatible.</p>
             <label className="mt-4 flex items-center gap-2 text-sm">
               <input type="checkbox" checked={includeDetails} onChange={(e) => setIncludeDetails(e.target.checked)} className="size-4 rounded border-border" />
-              Inclure les détails (Article, Quantité, Prix, Sous-total, Devis)
+              Include details (Item, Quantity, Price, Subtotal, Quote)
             </label>
             <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowExport(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted">Annuler</button>
+              <button onClick={() => setShowExport(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
               <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                {exporting ? "Export..." : <><Download className="size-4" /> Exporter</>}
+                {exporting ? "Exporting..." : <><Download className="size-4" /> Export</>}
               </button>
             </div>
           </div>
@@ -272,17 +272,17 @@ export default function BonCommandesPage() {
               <thead>
                 <tr className="bg-muted text-left text-xs text-muted-foreground">
                   <th className="w-8 px-4 py-3" />
-                  <th className="px-4 py-3 font-medium"><span className="flex items-center gap-1.5"><Hash className="size-3.5" /> N°</span></th>
+                  <th className="px-4 py-3 font-medium"><span className="flex items-center gap-1.5"><Hash className="size-3.5" /> No.</span></th>
                   <ColumnFilterHeader label="PO" options={poOptions} selected={filters.po} onChange={(v) => updateFilter("po", v)} />
-                  <ColumnFilterHeader label="DateCreation" options={dateCreationOptions} selected={filters.dateCreation} onChange={(v) => updateFilter("dateCreation", v)} />
-                  <ColumnFilterHeader label="Fournisseur" options={fournisseurOptions} selected={filters.fournisseur} onChange={(v) => updateFilter("fournisseur", v)} />
-                  <th className="px-4 py-3 font-medium"><span className="flex items-center gap-1.5"><FileText className="size-3.5" /> PDF finance</span></th>
+                  <ColumnFilterHeader label="Creation Date" options={dateCreationOptions} selected={filters.dateCreation} onChange={(v) => updateFilter("dateCreation", v)} />
+                  <ColumnFilterHeader label="Supplier" options={fournisseurOptions} selected={filters.fournisseur} onChange={(v) => updateFilter("fournisseur", v)} />
+                  <th className="px-4 py-3 font-medium"><span className="flex items-center gap-1.5"><FileText className="size-3.5" /> Finance PDF</span></th>
                 </tr>
               </thead>
               <tbody>
                 {pageItems.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Aucun bon de commande trouvé.</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No purchase orders found.</td>
                   </tr>
                 ) : (
                   pageItems.map((b) => {
@@ -297,14 +297,14 @@ export default function BonCommandesPage() {
                           <td className="px-4 py-3 text-center"><ChevronRight className={`size-4 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`} /></td>
                           <td className="px-4 py-3.5 font-semibold">#{demandeId}</td>
                           <td className="px-4 py-3.5">{b.po ?? b.Po ?? "—"}</td>
-                          <td className="px-4 py-3.5 text-muted-foreground">{b.dateCreation ?? b.DateCreation ? new Date(b.dateCreation ?? b.DateCreation).toLocaleDateString("fr-FR") : "—"}</td>
+                          <td className="px-4 py-3.5 text-muted-foreground">{b.dateCreation ?? b.DateCreation ? new Date(b.dateCreation ?? b.DateCreation).toLocaleDateString("en-US") : "—"}</td>
                           <td className="px-4 py-3.5">{b.fournisseurNom ?? b.FournisseurNom ?? "—"}</td>
                           <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
                             <div className="flex min-w-[300px] flex-col gap-2">
                               <div className="flex items-center gap-2">
                                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted">
                                   <Upload className="size-4" />
-                                  {savingPaths[bonCommandeId] ? "Upload..." : "Uploader PDF"}
+                                  {savingPaths[bonCommandeId] ? "Uploading..." : "Upload PDF"}
                                   <input
                                     type="file"
                                     accept="application/pdf,.pdf"
@@ -327,7 +327,7 @@ export default function BonCommandesPage() {
                                     {cheminValue}
                                   </a>
                                 ) : (
-                                  <span className="text-xs text-muted-foreground">Aucun fichier</span>
+                                  <span className="text-xs text-muted-foreground">No file</span>
                                 )}
                               </div>
                             </div>
@@ -337,7 +337,7 @@ export default function BonCommandesPage() {
                         {expanded && (
                           <tr>
                             <td colSpan={6} className="bg-muted/40 px-6 py-4">
-                              {(!details) ? <p className="text-sm text-muted-foreground">Chargement des articles...</p>
+                              {(!details) ? <p className="text-sm text-muted-foreground">Loading items...</p>
                                 : details.error ? <p className="text-sm text-destructive">{details.error}</p>
                                 : <BonCommandeDetails details={details} />}
                             </td>
@@ -351,10 +351,10 @@ export default function BonCommandesPage() {
             </table>
           </div>
           <div className="flex items-center justify-between border-t border-border px-4 py-3.5 text-xs text-muted-foreground">
-            <span>Affichage de {pageItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} à {(page - 1) * PAGE_SIZE + pageItems.length} sur {filtered.length} bons</span>
+            <span>Showing {pageItems.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1} to {(page - 1) * PAGE_SIZE + pageItems.length} of {filtered.length} orders</span>
             <div className="flex gap-2">
-              <button className="rounded-lg border border-border px-3 py-2 font-medium text-foreground hover:bg-muted disabled:opacity-50" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Précédent</button>
-              <button className="rounded-lg border border-border px-3 py-2 font-medium text-foreground hover:bg-muted disabled:opacity-50" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Suivant</button>
+              <button className="rounded-lg border border-border px-3 py-2 font-medium text-foreground hover:bg-muted disabled:opacity-50" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
+              <button className="rounded-lg border border-border px-3 py-2 font-medium text-foreground hover:bg-muted disabled:opacity-50" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
             </div>
           </div>
         </div>
@@ -398,7 +398,7 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
     };
   }, [open]);
   const filteredOptions = options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()));
-  const isActive = selected !== "Tous";
+  const isActive = selected !== "All";
   function select(value) { onChange(value); setOpen(false); setQuery(""); }
   return (
     <th className={`relative px-4 py-3 font-medium ${className}`}>
@@ -410,11 +410,11 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
         <div ref={menuRef} onClick={(e) => e.stopPropagation()} style={{ position: "fixed", top: position.top, left: position.left, right: position.right }} className="z-50 w-56 rounded-lg border border-border bg-card p-2 text-left font-normal normal-case text-foreground shadow-[var(--shadow-card)]">
           <div className="mb-1.5 flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
             <Search className="size-3.5 text-muted-foreground" />
-            <input autoFocus type="text" placeholder="Rechercher..." value={query} onChange={(e) => setQuery(e.target.value)} className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+            <input autoFocus type="text" placeholder="Search..." value={query} onChange={(e) => setQuery(e.target.value)} className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
           </div>
           <div className="max-h-56 overflow-y-auto">
-            <div onClick={() => select("Tous")} className={`cursor-pointer rounded-md px-2 py-1.5 text-sm hover:bg-muted ${selected === "Tous" ? "font-bold" : "font-normal"}`}>Tous</div>
-            {filteredOptions.length === 0 ? <p className="px-2 py-2 text-xs text-muted-foreground">Aucun résultat.</p> : filteredOptions.map((o) => <div key={o.value} onClick={() => select(o.value)} className={`cursor-pointer rounded-md px-2 py-1.5 text-sm hover:bg-muted ${selected === o.value ? "font-bold" : "font-normal"}`}>{o.label}</div>)}
+            <div onClick={() => select("All")} className={`cursor-pointer rounded-md px-2 py-1.5 text-sm hover:bg-muted ${selected === "All" ? "font-bold" : "font-normal"}`}>All</div>
+            {filteredOptions.length === 0 ? <p className="px-2 py-2 text-xs text-muted-foreground">No results.</p> : filteredOptions.map((o) => <div key={o.value} onClick={() => select(o.value)} className={`cursor-pointer rounded-md px-2 py-1.5 text-sm hover:bg-muted ${selected === o.value ? "font-bold" : "font-normal"}`}>{o.label}</div>)}
           </div>
         </div>,
         document.body
@@ -424,17 +424,17 @@ function ColumnFilterHeader({ label, options, selected, onChange, align = "left"
 }
 
 function BonCommandeDetails({ details }) {
-  if (!details || details.length === 0) return <p className="text-sm text-muted-foreground">Aucun article.</p>;
+  if (!details || details.length === 0) return <p className="text-sm text-muted-foreground">No items.</p>;
   const total = details.reduce((s, d) => s + d.quantite * (d.prix ?? 0), 0);
   return (
     <table className="w-full border-collapse text-sm">
       <thead>
         <tr>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Article</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Quantité</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Prix unitaire</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Sous-total</th>
-          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Devis</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Item</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Quantity</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Unit Price</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Subtotal</th>
+          <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Quote</th>
         </tr>
       </thead>
       <tbody>
@@ -442,8 +442,8 @@ function BonCommandeDetails({ details }) {
           <tr key={line.id} className="border-t border-border">
             <td className="px-2 py-1.5">{line.article}</td>
             <td className="px-2 py-1.5">{line.quantite}</td>
-            <td className="px-2 py-1.5">{line.prix != null ? line.prix.toLocaleString("fr-FR") + " $" : "—"}</td>
-            <td className="px-2 py-1.5">{(line.quantite * (line.prix ?? 0)).toLocaleString("fr-FR")} $</td>
+            <td className="px-2 py-1.5">{line.prix != null ? line.prix.toLocaleString("en-US") + " $" : "—"}</td>
+            <td className="px-2 py-1.5">{(line.quantite * (line.prix ?? 0)).toLocaleString("en-US")} $</td>
             <td className="px-2 py-1.5">{line.devis || "—"}</td>
           </tr>
         ))}
@@ -451,7 +451,7 @@ function BonCommandeDetails({ details }) {
       <tfoot>
         <tr className="border-t border-border">
           <td colSpan={3} className="px-2 py-2"><strong>Total</strong></td>
-          <td colSpan={2} className="px-2 py-2"><strong>{total.toLocaleString("fr-FR")} $</strong></td>
+          <td colSpan={2} className="px-2 py-2"><strong>{total.toLocaleString("en-US")} $</strong></td>
         </tr>
       </tfoot>
     </table>

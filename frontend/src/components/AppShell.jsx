@@ -4,6 +4,7 @@ import {
   BarChart3,
   FileText,
   Building2,
+  Store,
   Settings,
   ShieldCheck,
   HelpCircle,
@@ -19,17 +20,18 @@ import { NavLink, useMatches, useNavigate } from "react-router-dom";
 import logo from "../assets/img/ECI_logo1.png";
 // ajuste le chemin relatif selon où se trouve réellement AppShell.jsx par rapport à src/assets
 const MENU_ITEMS = [
-  { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard, to: "/" },
-  { key: "demandes", label: "Suivi demandes d'achat", icon: ClipboardList, to: "/demandes" },
-  { key: "repartition", label: "Demandes par département", icon: Building2, to: "/repartition" },
-  { key: "suivi", label: "Suivi Capex", icon: BarChart3, to: "/suivi" },
-  { key: "boncommandes", label: "Bons de commande", icon: FileText, to: "/boncommandes" },
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/" },
+  { key: "demandes", label: "Purchase Requests", icon: ClipboardList, to: "/demandes" },
+  { key: "repartition", label: "Requests by Department", icon: Building2, to: "/repartition" },
+  { key: "suivi", label: "Capex Tracking", icon: BarChart3, to: "/suivi" },
+  { key: "boncommandes", label: "Purchase Orders", icon: FileText, to: "/boncommandes" },
+  { key: "fournisseurs", label: "Suppliers", icon: Store, to: "/fournisseurs" },
 ];
 const ACCOUNT_ITEMS = [
-  { key: "settings", label: "Paramètres", icon: Settings, to: "/parametres" },
-  { key: "security", label: "Sécurité", icon: ShieldCheck, to: "/securite" },
+  { key: "settings", label: "Settings", icon: Settings, to: "/parametres" },
+  { key: "security", label: "Security", icon: ShieldCheck, to: "/securite" },
 ];
-const SUPPORT_ITEMS = [{ key: "help", label: "Aide & Centre", icon: HelpCircle, to: "/aide" }];
+const SUPPORT_ITEMS = [{ key: "help", label: "Help Center", icon: HelpCircle, to: "/aide" }];
 
 function initials(name = "") {
   return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
@@ -70,7 +72,7 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
   const activeLabel =
     [...MENU_ITEMS, ...ACCOUNT_ITEMS, ...SUPPORT_ITEMS].find((i) => i.key === navKey)?.label ??
     matches.slice().reverse().find((m) => m.handle?.title)?.handle?.title ??
-    "Tableau de bord";
+    "Dashboard";
   const resolvedBreadcrumb = breadcrumb ?? breadcrumbHandle?.handle?.breadcrumb;
 
   const [collapsed, setCollapsed] = useState(() => {
@@ -100,14 +102,14 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
             <Search className="size-4" />
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder="Search..."
               className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
             />
           </div>
         )}
         {collapsed && (
           <div className="mt-4 flex justify-center">
-            <button title="Rechercher" className="grid size-9 place-items-center rounded-lg border border-sidebar-border text-muted-foreground hover:bg-muted">
+            <button title="Search" className="grid size-9 place-items-center rounded-lg border border-sidebar-border text-muted-foreground hover:bg-muted">
               <Search className="size-4" />
             </button>
           </div>
@@ -120,7 +122,7 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
           ))}
         </nav>
 
-        {!collapsed || mobileOpen ? <SectionLabel>Compte</SectionLabel> : <div className="pt-4" />}
+        {!collapsed || mobileOpen ? <SectionLabel>Account</SectionLabel> : <div className="pt-4" />}
         <nav className="space-y-1">
           {ACCOUNT_ITEMS.map((item) => (
             <NavItem key={item.key} item={item} collapsed={collapsed && !mobileOpen} onCloseMobile={closeMobile} />
@@ -139,17 +141,17 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
             <div className="mx-auto grid size-12 place-items-center rounded-full bg-primary-foreground/15">
               <HelpCircle className="size-6" />
             </div>
-            <p className="mt-3 font-bold">Besoin d'aide ?</p>
+            <p className="mt-3 font-bold">Need help?</p>
             <p className="mt-1 text-xs opacity-80">
-              Contactez le support pour toute question sur vos demandes Capex.
+              Contact support for any questions about your Capex requests.
             </p>
             <button className="mt-4 w-full rounded-lg bg-primary-foreground/15 py-2 text-sm font-semibold hover:bg-primary-foreground/25">
-              Contacter le support
+              Contact support
             </button>
           </div>
         ) : (
           <div className="mt-auto flex justify-center pb-2">
-            <button title="Besoin d'aide ?" className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <button title="Need help?" className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               <HelpCircle className="size-5" />
             </button>
           </div>
@@ -164,7 +166,7 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
             </button>
             <button
               onClick={() => setCollapsed((v) => !v)}
-              title={collapsed ? "Agrandir" : "Réduire"}
+              title={collapsed ? "Expand" : "Collapse"}
               className="hidden lg:grid size-8 place-items-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer mr-1"
             >
               <ChevronLeft className={`size-4 transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`} />
@@ -191,7 +193,7 @@ export default function AppShell({ active, onNavigate, user, breadcrumb, childre
                 {initials(user?.name ?? "U")}
               </div>
               <div className="hidden text-left sm:block">
-                <p className="text-sm font-semibold leading-tight">{user?.name ?? "Utilisateur"}</p>
+                <p className="text-sm font-semibold leading-tight">{user?.name ?? "User"}</p>
                 <p className="text-[11px] text-muted-foreground">{user?.role ?? ""}</p>
               </div>
               <ChevronDown className="size-4 text-muted-foreground" />
