@@ -97,7 +97,7 @@ public class CapexRepository : ICapexRepository
     using var connection = _connectionFactory.CreateConnection();
     await connection.OpenAsync();
 
-    // Inclut désormais BonDeCommande + toutes les demandes en attente (engagé)
+     // Inclut désormais BonDeCommande + toutes les demandes en attente (engagé) — inclut SAP/EMEA/Info
     using var command = new SqlCommand(@"
         SELECT dep.Nom AS DepartementNom, SUM(dd.Quantite * ISNULL(dd.Prix,0)) AS MontantConsomme
         FROM Demande d
@@ -105,7 +105,7 @@ public class CapexRepository : ICapexRepository
         INNER JOIN Departement dep ON u.DepartementID = dep.Id
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
         WHERE d.Id = @Id AND d.Statut IN (
-            @StatutBon, @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutFinanceConf, @StatutDirecteur)
+            @StatutBon, @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutFinanceConf, @StatutDirecteur, @StatutSAP, @StatutEMEA, @StatutInfo)
         GROUP BY dep.Nom
         ORDER BY MontantConsomme DESC", connection);
 
@@ -117,6 +117,9 @@ public class CapexRepository : ICapexRepository
     command.Parameters.AddWithValue("@StatutFinance", StatutDemande.EnAttenteValidationFinance.ToString());
     command.Parameters.AddWithValue("@StatutFinanceConf", StatutDemande.EnAttenteConfirmationFinance.ToString());
     command.Parameters.AddWithValue("@StatutDirecteur", StatutDemande.EnAttenteValidationDirecteur.ToString());
+    command.Parameters.AddWithValue("@StatutSAP", StatutDemande.EnAttenteInsertionSAP.ToString());
+    command.Parameters.AddWithValue("@StatutEMEA", StatutDemande.EnAttenteValidationEMEA.ToString());
+    command.Parameters.AddWithValue("@StatutInfo", StatutDemande.EnAttenteInformationsComplementaires.ToString());
     
     using var reader = await command.ExecuteReaderAsync();
     while (await reader.ReadAsync())
@@ -141,7 +144,7 @@ public async Task<double> GetMontantEnAttenteAsync(int Id)
         FROM Demande d
         INNER JOIN DetailDemande dd ON dd.DemandeId = d.idDemande
         WHERE d.Id = @Id AND d.Statut IN (
-            @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutFinanceConf, @StatutDirecteur)", connection);
+            @StatutAchat1, @StatutAchat2, @StatutChef, @StatutFinance, @StatutFinanceConf, @StatutDirecteur, @StatutSAP, @StatutEMEA, @StatutInfo)", connection);
 
     command.Parameters.AddWithValue("@Id", Id);
     command.Parameters.AddWithValue("@StatutAchat1", StatutDemande.EnAttenteValidationAchat1.ToString());
@@ -150,6 +153,9 @@ public async Task<double> GetMontantEnAttenteAsync(int Id)
     command.Parameters.AddWithValue("@StatutFinance", StatutDemande.EnAttenteValidationFinance.ToString());
     command.Parameters.AddWithValue("@StatutFinanceConf", StatutDemande.EnAttenteConfirmationFinance.ToString());
     command.Parameters.AddWithValue("@StatutDirecteur", StatutDemande.EnAttenteValidationDirecteur.ToString());
+    command.Parameters.AddWithValue("@StatutSAP", StatutDemande.EnAttenteInsertionSAP.ToString());
+    command.Parameters.AddWithValue("@StatutEMEA", StatutDemande.EnAttenteValidationEMEA.ToString());
+    command.Parameters.AddWithValue("@StatutInfo", StatutDemande.EnAttenteInformationsComplementaires.ToString());
 
     var val = await command.ExecuteScalarAsync();
     return val == null || val == DBNull.Value ? 0 : Convert.ToDouble(val);

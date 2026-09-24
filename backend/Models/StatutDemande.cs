@@ -8,12 +8,16 @@ public enum StatutDemande
     EnAttenteValidationFinance,
     EnAttenteConfirmationFinance, // alias SSMS "En attente confirmation finance"
     EnAttenteValidationDirecteur,
+    EnAttenteInsertionSAP,
+    EnAttenteValidationEMEA,
+    EnAttenteInformationsComplementaires,
     BonDeCommande,
     RefuseeAchat1,
     RefuseeAchat2,
     RefuseeChef,
     RefuseeFinance,
-    RefuseeDirecteur
+    RefuseeDirecteur,
+    RefuseeEMEA
 }
 
 public static class StatutDemandeExtensions
@@ -24,7 +28,10 @@ public static class StatutDemandeExtensions
         StatutDemande.EnAttenteValidationChef or
         StatutDemande.EnAttenteValidationFinance or
         StatutDemande.EnAttenteConfirmationFinance or
-        StatutDemande.EnAttenteValidationDirecteur;
+        StatutDemande.EnAttenteValidationDirecteur or
+        StatutDemande.EnAttenteInsertionSAP or
+        StatutDemande.EnAttenteValidationEMEA or
+        StatutDemande.EnAttenteInformationsComplementaires;
 
     public static string ToDisplay(this StatutDemande s) => s switch
     {
@@ -34,12 +41,16 @@ public static class StatutDemandeExtensions
         StatutDemande.EnAttenteValidationFinance => "En attente validation finance",
         StatutDemande.EnAttenteConfirmationFinance => "En attente confirmation finance",
         StatutDemande.EnAttenteValidationDirecteur => "En attente validation directeur",
+        StatutDemande.EnAttenteInsertionSAP => "En attente insertion SAP",
+        StatutDemande.EnAttenteValidationEMEA => "En attente validation EMEA",
+        StatutDemande.EnAttenteInformationsComplementaires => "En attente informations complémentaires",
         StatutDemande.BonDeCommande => "Bon de commande",
         StatutDemande.RefuseeAchat1 => "Refusé achat1",
         StatutDemande.RefuseeAchat2 => "Refusé achat2",
         StatutDemande.RefuseeChef => "Refusé chef",
         StatutDemande.RefuseeFinance => "Refusé finance",
         StatutDemande.RefuseeDirecteur => "Refusé directeur",
+        StatutDemande.RefuseeEMEA => "Refusé EMEA",
         _ => s.ToString()
     };
 
@@ -56,6 +67,7 @@ public static class StatutDemandeExtensions
             "refuse chef" or "refusee chef" => StatutDemande.RefuseeChef,
             "refuse finance" or "refusee finance" => StatutDemande.RefuseeFinance,
             "refuse directeur" or "refusee directeur" => StatutDemande.RefuseeDirecteur,
+            "refuse emea" or "refusee emea" => StatutDemande.RefuseeEMEA,
             "bon de commande" or "bon commande" => StatutDemande.BonDeCommande,
             "en attente validation directeur" => StatutDemande.EnAttenteValidationDirecteur,
             "en attente confirmation finance" => StatutDemande.EnAttenteConfirmationFinance,
@@ -63,6 +75,9 @@ public static class StatutDemandeExtensions
             "en attente validation achat2" => StatutDemande.EnAttenteValidationAchat2,
             "en attente validation chef" => StatutDemande.EnAttenteValidationChef,
             "en attente validation achat1" => StatutDemande.EnAttenteValidationAchat1,
+            "en attente insertion sap" => StatutDemande.EnAttenteInsertionSAP,
+            "en attente validation emea" => StatutDemande.EnAttenteValidationEMEA,
+            "en attente informations complementaires" => StatutDemande.EnAttenteInformationsComplementaires,
             _ => Enum.TryParse<StatutDemande>(raw.Replace(" ", "").Replace("é","e"), true, out var e) ? e : StatutDemande.EnAttenteValidationAchat1
         };
     }

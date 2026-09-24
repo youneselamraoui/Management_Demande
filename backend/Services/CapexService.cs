@@ -40,7 +40,10 @@ public class CapexService : ICapexService
         StatutDemande.EnAttenteValidationChef,
         StatutDemande.EnAttenteValidationFinance,
         StatutDemande.EnAttenteConfirmationFinance,
-        StatutDemande.EnAttenteValidationDirecteur
+        StatutDemande.EnAttenteValidationDirecteur,
+        StatutDemande.EnAttenteInsertionSAP,
+        StatutDemande.EnAttenteValidationEMEA,
+        StatutDemande.EnAttenteInformationsComplementaires
     };
 
     private async Task<double> CalculateResteBudgetAsync(int Id, double budgetTotal)
@@ -56,7 +59,10 @@ public class CapexService : ICapexService
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                 dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires))
             .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
         return budgetTotal - consomme;
     }
@@ -74,7 +80,10 @@ public class CapexService : ICapexService
                     dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                     dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                     dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires))
                 .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }
@@ -114,7 +123,10 @@ public class CapexService : ICapexService
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                 dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur));
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires));
         if (from != null) parDepartementQuery = parDepartementQuery.Where(dd => dd.Demande.CreatedAt >= from);
         if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); parDepartementQuery = parDepartementQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
 
@@ -146,7 +158,10 @@ public class CapexService : ICapexService
             StatutDemande.EnAttenteValidationChef,
             StatutDemande.EnAttenteValidationFinance,
             StatutDemande.EnAttenteConfirmationFinance,
-            StatutDemande.EnAttenteValidationDirecteur
+            StatutDemande.EnAttenteValidationDirecteur,
+            StatutDemande.EnAttenteInsertionSAP,
+            StatutDemande.EnAttenteValidationEMEA,
+            StatutDemande.EnAttenteInformationsComplementaires
         };
 
         var enAttenteQuery = _context.DetailDemandes.AsNoTracking()
@@ -156,7 +171,10 @@ public class CapexService : ICapexService
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                 dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur));
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires));
         if (from != null) enAttenteQuery = enAttenteQuery.Where(dd => dd.Demande.CreatedAt >= from);
         if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); enAttenteQuery = enAttenteQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
         var montantEnAttente = await enAttenteQuery.SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
@@ -168,7 +186,10 @@ public class CapexService : ICapexService
             dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
             dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
             dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-            dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur));
+            dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+            dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+            dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+            dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires));
         if (from != null) resteCalculeQuery = resteCalculeQuery.Where(dd => dd.Demande.CreatedAt >= from);
         if (to != null) { var toEnd = to.Value.Date.AddDays(1).AddTicks(-1); resteCalculeQuery = resteCalculeQuery.Where(dd => dd.Demande.CreatedAt <= toEnd); }
         var consommeFiltre = await resteCalculeQuery.SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;

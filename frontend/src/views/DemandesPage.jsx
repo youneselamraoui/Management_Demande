@@ -29,10 +29,16 @@ const STATUTS = [
   "EnAttenteValidationChef",
   "EnAttenteConfirmationFinance",
   "EnAttenteValidationDirecteur",
+  "EnAttenteInsertionSAP",
+  "EnAttenteValidationEMEA",
+  "EnAttenteInformationsComplementaires",
   "BonDeCommande",
+  "RefuseeAchat1",
   "RefuseeAchat2",
+  "RefuseeChef",
   "RefuseeFinance",
   "RefuseeDirecteur",
+  "RefuseeEMEA",
 ];
 const STATUT_LABELS = {
   EnAttenteValidationAchat1: "Pending purchase validation 1",
@@ -41,12 +47,16 @@ const STATUT_LABELS = {
   EnAttenteValidationFinance: "Pending finance validation",
   EnAttenteConfirmationFinance: "Pending finance confirmation",
   EnAttenteValidationDirecteur: "Pending director validation",
+  EnAttenteInsertionSAP: "Pending SAP insertion",
+  EnAttenteValidationEMEA: "Pending EMEA validation",
+  EnAttenteInformationsComplementaires: "Pending additional info",
   BonDeCommande: "Purchase Order",
   RefuseeAchat1: "Rejected purchase 1",
   RefuseeAchat2: "Rejected purchase 2",
   RefuseeChef: "Rejected by manager",
   RefuseeFinance: "Rejected by finance",
   RefuseeDirecteur: "Rejected by director",
+  RefuseeEMEA: "Rejected by EMEA",
 };
 
 const DEFAULT_FILTERS = {

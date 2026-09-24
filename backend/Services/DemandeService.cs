@@ -75,7 +75,10 @@ public class DemandeService : IDemandeService
                 StatutDemande.EnAttenteValidationChef,
                 StatutDemande.EnAttenteValidationFinance,
                 StatutDemande.EnAttenteConfirmationFinance,
-                StatutDemande.EnAttenteValidationDirecteur
+                StatutDemande.EnAttenteValidationDirecteur,
+                StatutDemande.EnAttenteInsertionSAP,
+                StatutDemande.EnAttenteValidationEMEA,
+                StatutDemande.EnAttenteInformationsComplementaires
             };
             var engage = await _context.DetailDemandes
                 .Where(dd => dd.Demande.CapexId == dto.CapexId && (
@@ -85,7 +88,10 @@ public class DemandeService : IDemandeService
                     dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                     dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                     dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires))
                 .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             if (capex.BudgetTotal - engage < montantNouveau)
                 throw new BusinessException($"Budget restant insuffisant pour ce Capex. Restant engagé: {capex.BudgetTotal - engage} $, demandé: {montantNouveau} $.");
@@ -144,7 +150,10 @@ public class DemandeService : IDemandeService
                     StatutDemande.EnAttenteValidationChef,
                     StatutDemande.EnAttenteValidationFinance,
                     StatutDemande.EnAttenteConfirmationFinance,
-                    StatutDemande.EnAttenteValidationDirecteur
+                    StatutDemande.EnAttenteValidationDirecteur,
+                    StatutDemande.EnAttenteInsertionSAP,
+                    StatutDemande.EnAttenteValidationEMEA,
+                    StatutDemande.EnAttenteInformationsComplementaires
                 };
                 var engageUpdate = await _context.DetailDemandes
                     .Where(dd => dd.Demande.CapexId == dto.CapexId && (
@@ -154,7 +163,10 @@ public class DemandeService : IDemandeService
                         dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                         dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                         dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                        dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires))
                     .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
                 capexEnt.BudgetRestant = capexEnt.BudgetTotal - engageUpdate;
                 await _context.SaveChangesAsync();
@@ -247,6 +259,7 @@ public class DemandeService : IDemandeService
     demande.UpdatedAt = maintenant;
 
     // Chaque validation renseigne sa date puis fait avancer la demande vers l'étape suivante.
+    // Mode affichage : SAP/EMEA/Info ajoutés pour compléter le référentiel 15 statuts (pas de workflow imposé)
     switch (demande.Statut)
     {
         case StatutDemande.EnAttenteValidationAchat1:
@@ -268,10 +281,16 @@ public class DemandeService : IDemandeService
             break;
         case StatutDemande.EnAttenteValidationDirecteur:
             demande.DateValidateDirecteur = maintenant;
+            // Ordre nominal complet : directeur -> insertion SAP (étape ajoutée)
+            demande.Statut = StatutDemande.EnAttenteInsertionSAP;
+            break;
+        case StatutDemande.EnAttenteInsertionSAP:
+            demande.Statut = StatutDemande.EnAttenteValidationEMEA;
+            break;
+        case StatutDemande.EnAttenteValidationEMEA:
+            demande.DateValidateDirecteur ??= maintenant;
             if (demande.CapexId != null && demande.Capex != null)
             {
-                // Le budget est déjà engagé par les demandes en attente (incluant cette demande)
-                // donc la validation finale ne change pas le total engagé : on vérifie seulement que l'engagé total reste <= BudgetTotal
                 var statutsEngages = new[]
                 {
                     StatutDemande.BonDeCommande,
@@ -280,7 +299,10 @@ public class DemandeService : IDemandeService
                     StatutDemande.EnAttenteValidationChef,
                     StatutDemande.EnAttenteValidationFinance,
                     StatutDemande.EnAttenteConfirmationFinance,
-                    StatutDemande.EnAttenteValidationDirecteur
+                    StatutDemande.EnAttenteValidationDirecteur,
+                    StatutDemande.EnAttenteInsertionSAP,
+                    StatutDemande.EnAttenteValidationEMEA,
+                    StatutDemande.EnAttenteInformationsComplementaires
                 };
                 var engage = await _context.DetailDemandes
                     .Where(dd => dd.Demande.CapexId == demande.CapexId && (
@@ -290,19 +312,19 @@ public class DemandeService : IDemandeService
                         dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                         dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                         dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                        dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                        dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires))
                     .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
-                // engage inclut déjà cette demande (en attente), donc reste = BudgetTotal - engage
                 var reste = demande.Capex.BudgetTotal - engage;
                 if (reste < 0)
                     throw new BusinessException("Budget restant insuffisant pour valider cette demande (budget déjà engagé par les demandes en attente).");
                 if (!ToutesLesValidationsSontFaites(demande))
                     throw new BusinessException("Toutes les validations doivent être faites avant Bon de commande.");
-                // Le passage EnAttente -> BonDeCommande ne change pas le total engagé, donc BudgetRestant reste identique (= reste)
                 demande.Capex.BudgetRestant = reste;
             }
             demande.Statut = StatutDemande.BonDeCommande;
-            // Auto-création BonCommande si inexistant
             var fournisseur = await _context.Fournisseurs.FirstOrDefaultAsync();
             if (fournisseur == null)
             {
@@ -322,6 +344,8 @@ public class DemandeService : IDemandeService
                 });
             }
             break;
+        case StatutDemande.EnAttenteInformationsComplementaires:
+            throw new BusinessException("Demande en attente d'informations complémentaires — validation bloquée.");
         default:
             throw new BusinessException($"Statut {demande.Statut} non géré pour validation.");
     }
@@ -352,6 +376,9 @@ public async Task<Demande> RefuserDemandeAsync(int id)
         StatutDemande.EnAttenteValidationFinance => RefuserFinance(demande, maintenant),
         StatutDemande.EnAttenteConfirmationFinance => RefuserFinance(demande, maintenant),
         StatutDemande.EnAttenteValidationDirecteur => RefuserDirecteur(demande, maintenant),
+        StatutDemande.EnAttenteInsertionSAP => RefuserEMEA(demande, maintenant),
+        StatutDemande.EnAttenteValidationEMEA => RefuserEMEA(demande, maintenant),
+        StatutDemande.EnAttenteInformationsComplementaires => RefuserDirecteur(demande, maintenant),
         _ => throw new BusinessException("Statut non géré pour le refus.")
     };
 
@@ -367,7 +394,10 @@ public async Task<Demande> RefuserDemandeAsync(int id)
             StatutDemande.EnAttenteValidationChef,
             StatutDemande.EnAttenteValidationFinance,
             StatutDemande.EnAttenteConfirmationFinance,
-            StatutDemande.EnAttenteValidationDirecteur
+            StatutDemande.EnAttenteValidationDirecteur,
+            StatutDemande.EnAttenteInsertionSAP,
+            StatutDemande.EnAttenteValidationEMEA,
+            StatutDemande.EnAttenteInformationsComplementaires
         };
         var engage = await _context.DetailDemandes
             .Where(dd => dd.Demande.CapexId == demande.CapexId && (
@@ -377,7 +407,10 @@ public async Task<Demande> RefuserDemandeAsync(int id)
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                 dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                 dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires))
             .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
         demande.Capex!.BudgetRestant = demande.Capex.BudgetTotal - engage;
         await _context.SaveChangesAsync();
@@ -416,6 +449,12 @@ private static StatutDemande RefuserDirecteur(EfDemande demande, DateTime date)
     return StatutDemande.RefuseeDirecteur;
 }
 
+private static StatutDemande RefuserEMEA(EfDemande demande, DateTime date)
+{
+    demande.DateValidateDirecteur = date;
+    return StatutDemande.RefuseeEMEA;
+}
+
 private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
     demande.DateValidationAchat1.HasValue &&
     demande.DateValidationAchat2.HasValue &&
@@ -433,7 +472,10 @@ private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
             StatutDemande.EnAttenteValidationChef,
             StatutDemande.EnAttenteValidationFinance,
             StatutDemande.EnAttenteConfirmationFinance,
-            StatutDemande.EnAttenteValidationDirecteur
+            StatutDemande.EnAttenteValidationDirecteur,
+            StatutDemande.EnAttenteInsertionSAP,
+            StatutDemande.EnAttenteValidationEMEA,
+            StatutDemande.EnAttenteInformationsComplementaires
         };
         var capexes = await _context.Capexes.ToListAsync();
         foreach (var c in capexes)
@@ -446,7 +488,10 @@ private static bool ToutesLesValidationsSontFaites(EfDemande demande) =>
                     dd.Demande.Statut == StatutDemande.EnAttenteValidationChef ||
                     dd.Demande.Statut == StatutDemande.EnAttenteValidationFinance ||
                     dd.Demande.Statut == StatutDemande.EnAttenteConfirmationFinance ||
-                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur))
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationDirecteur ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteInsertionSAP ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteValidationEMEA ||
+                    dd.Demande.Statut == StatutDemande.EnAttenteInformationsComplementaires))
                 .SumAsync(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             c.BudgetRestant = c.BudgetTotal - consomme;
         }

@@ -73,16 +73,20 @@ UPDATE Demandes SET Statut='EnAttenteValidationDirecteur' WHERE Statut='Validati
 UPDATE Demandes SET Statut='BonDeCommande' WHERE Statut='Acceptee';
 UPDATE Demandes SET Statut='RefuseeAchat1' WHERE Statut='Rejetee' AND DateValidationAchat1 IS NULL;
 UPDATE Demandes SET Statut='RefuseeAchat2' WHERE Statut='Rejetee' AND DateValidationAchat1 IS NOT NULL AND DateValidationAchat2 IS NULL;
--- Normalisation vers affichage avec accents (nouveau référentiel 9 valeurs)
+-- Normalisation vers affichage avec accents (référentiel 16 valeurs avec SAP/EMEA/Info)
 UPDATE Demandes SET Statut='En attente validation achat1' WHERE Statut='EnAttenteValidationAchat1';
 UPDATE Demandes SET Statut='En attente validation achat2' WHERE Statut='EnAttenteValidationAchat2';
 UPDATE Demandes SET Statut='En attente validation chef' WHERE Statut='EnAttenteValidationChef';
 UPDATE Demandes SET Statut='En attente confirmation finance' WHERE Statut IN ('EnAttenteValidationFinance','En attente validation finance','EnAttenteConfirmationFinance');
 UPDATE Demandes SET Statut='En attente validation directeur' WHERE Statut='EnAttenteValidationDirecteur';
+UPDATE Demandes SET Statut='En attente insertion SAP' WHERE Statut='EnAttenteInsertionSAP';
+UPDATE Demandes SET Statut='En attente validation EMEA' WHERE Statut='EnAttenteValidationEMEA';
+UPDATE Demandes SET Statut='En attente informations complémentaires' WHERE Statut='EnAttenteInformationsComplementaires';
 UPDATE Demandes SET Statut='Bon de commande' WHERE Statut IN ('BonDeCommande','Bon commande');
 UPDATE Demandes SET Statut='Refusé achat2' WHERE Statut IN ('RefuseeAchat2','Refusée achat2');
 UPDATE Demandes SET Statut='Refusé finance' WHERE Statut IN ('RefuseeFinance','Refusée finance');
 UPDATE Demandes SET Statut='Refusé directeur' WHERE Statut IN ('RefuseeDirecteur','Refusée directeur');
+UPDATE Demandes SET Statut='Refusé EMEA' WHERE Statut IN ('RefuseeEMEA','Refusée EMEA');
 -- Garder Refusé achat1 / Refusé chef pour compat mais non proposés en filtre
 UPDATE Demandes SET Statut='Refusé achat1' WHERE Statut='RefuseeAchat1';
 UPDATE Demandes SET Statut='Refusé chef' WHERE Statut='RefuseeChef';
@@ -145,7 +149,10 @@ using (var scope = app.Services.CreateScope())
                 backend.Models.StatutDemande.EnAttenteValidationChef,
                 backend.Models.StatutDemande.EnAttenteValidationFinance,
                 backend.Models.StatutDemande.EnAttenteConfirmationFinance,
-                backend.Models.StatutDemande.EnAttenteValidationDirecteur
+                backend.Models.StatutDemande.EnAttenteValidationDirecteur,
+                backend.Models.StatutDemande.EnAttenteInsertionSAP,
+                backend.Models.StatutDemande.EnAttenteValidationEMEA,
+                backend.Models.StatutDemande.EnAttenteInformationsComplementaires
             };
             var consomme = db.DetailDemandes
                 .Where(dd => dd.Demande.CapexId == c.Id && (
@@ -155,7 +162,10 @@ using (var scope = app.Services.CreateScope())
                     dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationChef ||
                     dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationFinance ||
                     dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteConfirmationFinance ||
-                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationDirecteur))
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationDirecteur ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteInsertionSAP ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteValidationEMEA ||
+                    dd.Demande.Statut == backend.Models.StatutDemande.EnAttenteInformationsComplementaires))
                 .Sum(dd => (double?)(dd.Quantite * (dd.Prix ?? 0))) ?? 0;
             var reste = c.BudgetTotal - consomme;
             if (c.BudgetRestant != reste) c.BudgetRestant = reste;

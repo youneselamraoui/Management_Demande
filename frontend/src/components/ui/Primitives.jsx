@@ -50,6 +50,9 @@ const STATUT_STYLES = {
   EnAttenteValidationFinance: "bg-warning-soft text-warning",
   EnAttenteConfirmationFinance: "bg-warning-soft text-warning",
   EnAttenteValidationDirecteur: "bg-warning-soft text-warning",
+  EnAttenteInsertionSAP: "bg-info-soft text-info",
+  EnAttenteValidationEMEA: "bg-warning-soft text-warning",
+  EnAttenteInformationsComplementaires: "bg-info-soft text-info",
   BonDeCommande: "bg-success-soft text-success",
   Acceptee: "bg-success-soft text-success",
   Rejetee: "bg-danger-soft text-destructive",
@@ -58,6 +61,7 @@ const STATUT_STYLES = {
   RefuseeChef: "bg-danger-soft text-destructive",
   RefuseeFinance: "bg-danger-soft text-destructive",
   RefuseeDirecteur: "bg-danger-soft text-destructive",
+  RefuseeEMEA: "bg-danger-soft text-destructive",
 };
 const STATUT_LABELS = {
   EnAttente: "Pending",
@@ -72,6 +76,9 @@ const STATUT_LABELS = {
   EnAttenteValidationFinance: "Pending finance validation",
   EnAttenteConfirmationFinance: "Pending finance confirmation",
   EnAttenteValidationDirecteur: "Pending director validation",
+  EnAttenteInsertionSAP: "Pending SAP insertion",
+  EnAttenteValidationEMEA: "Pending EMEA validation",
+  EnAttenteInformationsComplementaires: "Pending additional info",
   BonDeCommande: "Purchase Order",
   Acceptee: "Purchase Order",
   Rejetee: "Rejected",
@@ -80,6 +87,7 @@ const STATUT_LABELS = {
   RefuseeChef: "Rejected by manager",
   RefuseeFinance: "Rejected by finance",
   RefuseeDirecteur: "Rejected by director",
+  RefuseeEMEA: "Rejected by EMEA",
 };
 
 export function StatutBadge({ statut }) {

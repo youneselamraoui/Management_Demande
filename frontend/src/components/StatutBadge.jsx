@@ -6,12 +6,16 @@ const STATUT_STYLES = {
   EnAttenteValidationFinance: { bg: "#FFF4E0", color: "#9A6700", label: "Pending finance validation" },
   EnAttenteValidationDirecteur: { bg: "#FFF4E0", color: "#9A6700", label: "Pending director validation" },
   EnAttenteConfirmationFinance: { bg: "#FFF4E0", color: "#9A6700", label: "Pending finance confirmation" },
+  EnAttenteInsertionSAP: { bg: "#E0F2FF", color: "#0B5394", label: "Pending SAP insertion" },
+  EnAttenteValidationEMEA: { bg: "#FFF4E0", color: "#9A6700", label: "Pending EMEA validation" },
+  EnAttenteInformationsComplementaires: { bg: "#E0F2FF", color: "#0B5394", label: "Pending additional info" },
   BonDeCommande: { bg: "#E3F2E8", color: "#1B6E3C", label: "Purchase Order" },
   RefuseeAchat1: { bg: "#FDE8E8", color: "#B3261E", label: "Rejected purchase 1" },
   RefuseeAchat2: { bg: "#FDE8E8", color: "#B3261E", label: "Rejected purchase 2" },
   RefuseeChef: { bg: "#FDE8E8", color: "#B3261E", label: "Rejected by manager" },
   RefuseeFinance: { bg: "#FDE8E8", color: "#B3261E", label: "Rejected by finance" },
   RefuseeDirecteur: { bg: "#FDE8E8", color: "#B3261E", label: "Rejected by director" },
+  RefuseeEMEA: { bg: "#FDE8E8", color: "#B3261E", label: "Rejected by EMEA" },
 };
 
 export default function StatutBadge({ statut }) {
